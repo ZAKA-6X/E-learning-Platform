@@ -1,0 +1,2 @@
+-- schema.sql
+-- Tables structure placeholder

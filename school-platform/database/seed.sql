@@ -1,0 +1,2 @@
+-- seed.sql
+-- Sample data placeholder
