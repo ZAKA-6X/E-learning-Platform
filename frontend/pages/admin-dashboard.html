@@ -1,2 +1,20 @@
-<!-- admin-dashboard.html -->
-<!-- Admin view placeholder -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Welcome to the Dashboard</h1>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <label for="file">Import Excel File:</label>
+            <input type="file" id="file" name="file" required>
+            <button type="submit" class="btn">Upload</button>
+        </form>
+    </div>
+</body>
+</html>

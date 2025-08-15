@@ -44,13 +44,14 @@ label {
 }
 
 input {
-    width: 100%;
+    width: 90%; /* Make input smaller than full width */
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 14px;
+    display: block;
+    margin: 0 auto; /* Centers horizontally */
 }
-
 input:focus {
     border-color: #007bff;
     outline: none;
