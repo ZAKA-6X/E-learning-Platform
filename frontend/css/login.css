@@ -1,0 +1,127 @@
+/* Full Page Layout */
+body {
+  background-color: #000; /* dark background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #d7dadc;
+}
+
+.login-wrapper {
+  display: flex;
+  max-width: 900px;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Left Image */
+.login-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+
+/* Right Form Box */
+.login-box {
+  flex: 1;
+  background-color: #1a1a1b;
+  border: 1px solid #343536;
+  border-radius: 8px;
+  padding: 40px 30px;
+  max-width: 360px;
+  text-align: center;
+}
+
+.login-logo {
+  color: #ff4500; /* same as dashboard logo */
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 25px;
+}
+
+/* Inputs */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;;
+  border: 1px solid #343536;
+  border-radius: 4px;
+  background-color: #000;
+  color: #d7dadc;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  border-color: #0079d3;
+  outline: none;
+}
+
+/* Buttons */
+.btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #0079d3;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn:hover {
+  background-color: #1484e3;
+}
+
+/* Alt Button */
+.btn-alt {
+  width: 100%;
+  padding: 12px;
+  background-color: transparent;
+  border: 1px solid #0079d3;
+  border-radius: 4px;
+  color: #0079d3;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.btn-alt:hover {
+  background-color: #0079d3;
+  color: white;
+}
+
+/* Hide left image on small screens */
+@media (max-width: 768px) {
+  .login-image {
+    display: none;
+  }
+
+  .login-wrapper {
+    justify-content: center;
+  }
+
+  .login-box {
+    max-width: 300px;   /* keep compact */
+    width: 90%;         /* slightly responsive */
+    margin: 0 auto;     /* center */
+  }
+}

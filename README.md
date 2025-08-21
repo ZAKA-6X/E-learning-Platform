@@ -11,3 +11,9 @@ Project structure and setup for E-learning Platform.
     send email with password for every student in exel file via whatsapp, using TWILO,
 
     
+
+
+
+todo:
+toxic comments, posts,
+formation enseignat,

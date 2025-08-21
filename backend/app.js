@@ -7,6 +7,8 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT;
 
+
+
 // Middleware
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use(express.json());

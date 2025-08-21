@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClicaEd - Dashboard</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">ClicaEd</div>
+        <div class="search-bar">
+            <input type="text" placeholder="Recherche Clica">
+        </div>
+        <div class="user-menu">
+            <button class="action-button">
+            <i class="fas fa-plus"></i> Create
+            </button>
+            <button class="action-button">
+             Formation
+            </button>
+            <div class="user-avatar">U</div>
+        </div>
+        
+    </header>
+
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Sidebar -->
+        <nav class="left-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-header">Apprentissage</div>
+                <a href="#" class="sidebar-item active" title="Accueil">
+                    <span class="sidebar-icon"><i class="fas fa-home"></i></span> Accueil
+                </a>
+                <a href="#" class="sidebar-item" title="Matières">
+                    <span class="sidebar-icon"><i class="fas fa-book"></i></span> Matières
+                </a>
+                <a href="#" class="sidebar-item" title="Notes">
+                    <span class="sidebar-icon"><i class="fas fa-clipboard-list"></i></span> Notes
+                </a>
+                <a href="#" class="sidebar-item" title="Emploi du temps">
+                    <span class="sidebar-icon"><i class="fas fa-calendar-alt"></i></span> Emploi du temps
+                </a>
+                <a href="#" class="sidebar-item" title="Réunions">
+                    <span class="sidebar-icon"><i class="fas fa-video"></i></span> Réunions
+                </a>
+                <a href="#" class="sidebar-item" title="Examens">
+                    <span class="sidebar-icon"><i class="fas fa-file-alt"></i></span> Examens
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">Engagement</div>
+                <a href="#" class="sidebar-item" title="Messagerie">
+                    <span class="sidebar-icon"><i class="fas fa-envelope"></i></span> Messagerie
+                </a>
+                <a href="#" class="sidebar-item" title="Galerie">
+                    <span class="sidebar-icon"><i class="fas fa-image"></i></span> Galerie
+                </a>
+                <a href="#" class="sidebar-item" title="Favories">
+                    <span class="sidebar-icon"><i class="fas fa-star"></i></span> Favories
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">Resources</div>
+                <a href="#" class="sidebar-item" title="Support">
+                    <span class="sidebar-icon"><i class="fas fa-headset"></i></span> Support
+                </a>
+                <a href="#" class="sidebar-item" title="Aide">
+                    <span class="sidebar-icon"><i class="fas fa-question-circle"></i></span> Aide
+                </a>
+                <a href="#" class="sidebar-item" title="Contact">
+                    <span class="sidebar-icon"><i class="fas fa-phone"></i></span> Contact
+                </a>
+            </div>
+        </nav>
+
+        <!-- Centered Content Wrapper -->
+        <div class="centered-content">
+            <div class="content-container">
+                <!-- Main Content -->
+                <main class="content-area">
+                    <!-- Emergency Notification -->
+                    <div class="emergency-notification">
+                        <span class="emergency-icon">🚨</span>
+                        <span class="emergency-text">URGENT: Examen de Mathématiques reporté au 25 Mars - Vérifiez vos emails!</span>
+                    </div>
+
+                    <!-- Posts Container -->
+                    <div class="posts-container">
+                        <!-- Sort Bar -->
+                        <div class="sort-bar">
+                            <button class="sort-button active">Pour vous</button>
+                            <button class="sort-button">Community</button>
+                            <button class="sort-button sidebar-toggle" onclick="toggleRightSidebar()">Infos</button>
+                        </div>
+
+                        <!-- Posts -->
+                        <article class="post">
+                            <div class="post-header">
+                                <span class="subreddit">r/ExampleSub</span>
+                                <span>•</span>
+                                <span>Posted by u/user123</span>
+                                <span>•</span>
+                                <span>2h ago</span>
+                            </div>
+                            <div class="post-content">
+                                <h3 class="post-title">TITRE</h3>
+                                <div class="post-body">
+                                    POST COURS/ EXAMS /EXERCICES / ETUDIANT INTEGREE.
+                                </div>
+                            </div>
+                            <div class="post-actions">
+                                <div class="vote-section">
+                                    <button class="vote-button">▲</button>
+                                    <span class="vote-count">42</span>
+                                    <button class="vote-button">▼</button>
+                                </div>
+                                <button class="action-button">💬 3 Comments</button>
+                                <button class="action-button">📤 Share</button>
+                                <button class="action-button">📖 Save</button>
+                            </div>
+                        </article>
+
+                        <article class="post">
+                            <div class="post-header">
+                                <span class="subreddit">r/ExampleSub</span>
+                                <span>•</span>
+                                <span>Posted by u/user123</span>
+                                <span>•</span>
+                                <span>2h ago</span>
+                            </div>
+                            <div class="post-content">
+                                <h3 class="post-title">Comment construire un tableau de bord moderne</h3>
+                                <div class="post-body">
+                                    Ce tutoriel vous montre étape par étape comment créer un clone Reddit responsive en utilisant des techniques CSS modernes.
+                                </div>
+                            </div>
+                            <div class="post-actions">
+                                <div class="vote-section">
+                                    <button class="vote-button">▲</button>
+                                    <span class="vote-count">128</span>
+                                    <button class="vote-button">▼</button>
+                                </div>
+                                <button class="action-button">💬 24 Comments</button>
+                                <button class="action-button">📤 Share</button>
+                                <button class="action-button">📖 Save</button>
+                            </div>
+                        </article>
+
+                        <article class="post">
+                            <div class="post-header">
+                                <span class="subreddit">r/Mathematiques</span>
+                                <span>•</span>
+                                <span>Posted by u/prof_martin</span>
+                                <span>•</span>
+                                <span>4h ago</span>
+                            </div>
+                            <div class="post-content">
+                                <h3 class="post-title">Exercices d'algèbre linéaire - Chapitre 3</h3>
+                                <div class="post-body">
+                                    Nouveaux exercices disponibles sur les matrices et déterminants. N'oubliez pas de consulter les corrigés avant l'examen de demain.
+                                </div>
+                            </div>
+                            <div class="post-actions">
+                                <div class="vote-section">
+                                    <button class="vote-button">▲</button>
+                                    <span class="vote-count">67</span>
+                                    <button class="vote-button">▼</button>
+                                </div>
+                                <button class="action-button">💬 12 Comments</button>
+                                <button class="action-button">📤 Share</button>
+                                <button class="action-button">📖 Save</button>
+                            </div>
+                        </article>
+                    </div>
+                </main>
+
+                <!-- Right Sidebar -->
+                <aside class="right-sidebar">
+                    <button class="close-sidebar" onclick="toggleRightSidebar()">✖</button>
+                    <div class="widget">
+                        <div class="widget-header">Emergency Posts</div>
+                        <div class="widget-content">
+                            <p><strong>25 Mars:</strong> Examen Mathématiques</p>
+                            <p><strong>28 Mars:</strong> Réunion Projet</p>
+                            <p><strong>30 Mars:</strong> Remise Rapport</p>
+                        </div>
+                    </div>
+
+                    <div class="widget">
+                        <div class="widget-header">To Do</div>
+                        <div class="widget-content">
+                            <p>• ClicaEd Rules</p>
+                            <p>• Privacy Policy</p>
+                            <p>• User Agreement</p>
+                            <p>• Accessibility</p>
+                        </div>
+                    </div>
+
+                    <div class="widget">
+                        <div class="widget-header">Last Saves</div>
+                        <div class="widget-content">
+                           📌 Newton’s 2nd Law (2A Physics) <br>
+
+📌 Factorization Q (3B Math) <br>
+
+📌 Exam prep Q (2C Physics)
+
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleRightSidebar() {
+            const sidebar = document.querySelector(".right-sidebar");
+            sidebar.classList.toggle("visible");
+        }
+    </script>
+
+
+</body>
+</html>

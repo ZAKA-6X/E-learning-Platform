@@ -1,5 +1,7 @@
 const path = require('path');
-const pool = require('../config/db');
+const supabase = require('../config/db');
+
+
 
 exports.getLoginPage = (req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/pages/login.html'));
@@ -9,8 +11,17 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        const user = result.rows[0];
+        console.log('Email being queried:', email);
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .ilike('email', email); // Case-insensitive matching
+
+        if (error) {
+            console.error('Error fetching user:', error);
+        }
+
+        const user = data[0];
 
         if (!user || user.password !== password) {
             return res.status(401).json({ message: 'Email or password is incorrect' });
@@ -24,5 +35,7 @@ exports.login = async (req, res) => {
 };
 
 exports.getDashboard = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/pages/admin-dashboard.html'));
+    res.sendFile(path.join(__dirname, '../../frontend/pages/student-dashboard.html'));
 };
+
+

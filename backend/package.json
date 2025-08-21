@@ -7,6 +7,7 @@
     "start": "nodemon app.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.55.0",
     "body-parser": "^1.20.2",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -14,6 +15,7 @@
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10",
     "pg": "^8.11.1",
+    "postgres": "^3.4.7",
     "twilio": "^5.8.0",
     "xlsx": "^0.18.5"
   }

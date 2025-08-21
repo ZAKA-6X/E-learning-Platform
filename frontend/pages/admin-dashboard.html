@@ -1,20 +1,228 @@
-
-<!DOCTYPE html>
+<!-- Replace the icons in the nav bar with more appropriate ones -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <link rel="stylesheet" href="../css/styles.css">
+    <title>ClicaEd - Dashboard</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-    <div class="dashboard-container">
-        <h1>Welcome to the Dashboard</h1>
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <label for="file">Import Excel File:</label>
-            <input type="file" id="file" name="file" required>
-            <button type="submit" class="btn">Upload</button>
-        </form>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">ClicaEd</div>
+        <div class="search-bar">
+            <input type="text" placeholder="Recherche Clica">
+        </div>
+        <div class="user-menu">
+            <button class="action-button">
+            <i class="fas fa-plus"></i> Create
+            </button>
+            <button class="action-button">
+             Formation
+            </button>
+            <div class="user-avatar">U</div>
+        </div>
+        
+    </header>
+
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Sidebar -->
+        <nav class="left-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-header">Vue d’ensemble</div>
+                <a href="#" class="sidebar-item active" title="Accueil">
+                    <span class="sidebar-icon"><i class="fas fa-house"></i></span> Accueil
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">Comptes & Accès</div>
+                <a href="#" class="sidebar-item" title="Utilisateurs">
+                    <span class="sidebar-icon"><i class="fas fa-users"></i></span> Administration
+                </a>
+                <a href="#" class="sidebar-item" title="Utilisateurs">
+                    <span class="sidebar-icon"><i class="fas fa-users"></i></span> Enseignants
+                </a>
+                <a href="#" class="sidebar-item" title="Comptes">
+                    <span class="sidebar-icon"><i class="fas fa-user"></i></span> Etudiants
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">Communication</div>
+                <a href="#" class="sidebar-item" title="Annonces">
+                    <span class="sidebar-icon"><i class="fas fa-bullhorn"></i></span> Annonces
+                </a>
+                <a href="#" class="sidebar-item" title="Messageries">
+                    <span class="sidebar-icon"><i class="fas fa-comments"></i></span> Messageries
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">Gestion Académique</div>
+                    <a href="#" class="sidebar-item" title="Documents scolaires">
+                        <span class="sidebar-icon"><i class="fas fa-file-alt"></i></span> Documents scolaires
+                    </a>
+                    <a href="#" class="sidebar-item" title="Classes">
+                        <span class="sidebar-icon"><i class="fas fa-chalkboard-teacher"></i></span> Classes
+                    </a>
+                    <a href="#" class="sidebar-item" title="Rapports d’examens">
+                        <span class="sidebar-icon"><i class="fas fa-clipboard-list"></i></span> Rapports d’examens
+                    </a>
+                    <a href="#" class="sidebar-item" title="Rapports de présence">
+                        <span class="sidebar-icon"><i class="fas fa-user-check"></i></span> Rapports de présence
+                    </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">Suivi & Rapports</div>
+                <a href="#" class="sidebar-item" title="Activité des enseignants">
+                    <span class="sidebar-icon"><i class="fas fa-user-tie"></i></span> Activité des enseignants
+                </a>
+                <a href="#" class="sidebar-item" title="Progression des élèves">
+                    <span class="sidebar-icon"><i class="fas fa-chart-line"></i></span> Progression des élèves
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">Resources</div>
+                <a href="#" class="sidebar-item" title="Support">
+                    <span class="sidebar-icon"><i class="fas fa-headset"></i></span> Support
+                </a>
+                <a href="#" class="sidebar-item" title="Aide">
+                    <span class="sidebar-icon"><i class="fas fa-question-circle"></i></span> Aide
+                </a>
+                <a href="#" class="sidebar-item" title="Contact">
+                    <span class="sidebar-icon"><i class="fas fa-phone"></i></span> Contact
+                </a>
+            </div>
+        </nav>
+
+
+        <!-- Centered Content Wrapper -->
+        <div class="centered-content">
+            <div class="content-container">
+                <!-- Main Content -->
+                <main class="content-area">
+    <!-- Dashboard Explore Section -->
+    <div class="explore-header">
+        <div class="explore-filters">
+            <button class="filter-button active">Tout</button>
+            <button class="filter-button">Éducation</button>
+            <button class="filter-button">Sciences</button>
+            <button class="filter-button">Technologie</button>
+            <button class="filter-button">Culture</button>
+            <button class="filter-button">Sport</button>
+        </div>
     </div>
+
+    <!-- Categories Container -->
+    <div class="categories-container">
+
+        <!-- Recommended -->
+        <section class="category">
+            <h3 class="category-title">Recommandé pour vous</h3>
+            <div class="community-grid">
+                <div class="community-card">
+                    <div class="community-icon">📘</div>
+                    <div class="community-info">
+                        <h4>Mathématiques</h4>
+                        <p>Exercices, cours et révisions en Algèbre & Analyse.</p>
+                        <span class="members">120K étudiants</span>
+                    </div>
+                    <button class="join-btn">Rejoindre</button>
+                </div>
+
+                <div class="community-card">
+                    <div class="community-icon">💻</div>
+                    <div class="community-info">
+                        <h4>Informatique</h4>
+                        <p>Coding, algorithmique et systèmes marocains.</p>
+                        <span class="members">89K étudiants</span>
+                    </div>
+                    <button class="join-btn">Rejoindre</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sciences -->
+        <section class="category">
+            <h3 class="category-title">Sciences</h3>
+            <div class="community-grid">
+                <div class="community-card">
+                    <div class="community-icon">🧪</div>
+                    <div class="community-info">
+                        <h4>Physique-Chimie</h4>
+                        <p>Expériences, exercices et discussions scientifiques.</p>
+                        <span class="members">65K étudiants</span>
+                    </div>
+                    <button class="join-btn">Rejoindre</button>
+                </div>
+
+                <div class="community-card">
+                    <div class="community-icon">🌍</div>
+                    <div class="community-info">
+                        <h4>Géographie</h4>
+                        <p>Cartes, révisions et projets scolaires du système marocain.</p>
+                        <span class="members">42K étudiants</span>
+                    </div>
+                    <button class="join-btn">Rejoindre</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+
+                <!-- Right Sidebar -->
+                <aside class="right-sidebar">
+                    <button class="close-sidebar" onclick="toggleRightSidebar()">✖</button>
+                    <div class="widget">
+                        <div class="widget-header">Emergency Posts</div>
+                        <div class="widget-content">
+                            <p><strong>25 Mars:</strong> Examen Mathématiques</p>
+                            <p><strong>28 Mars:</strong> Réunion Projet</p>
+                            <p><strong>30 Mars:</strong> Remise Rapport</p>
+                        </div>
+                    </div>
+
+                    <div class="widget">
+                        <div class="widget-header">To Do</div>
+                        <div class="widget-content">
+                            <p>• ClicaEd Rules</p>
+                            <p>• Privacy Policy</p>
+                            <p>• User Agreement</p>
+                            <p>• Accessibility</p>
+                        </div>
+                    </div>
+
+                    <div class="widget">
+                        <div class="widget-header">Last Saves</div>
+                        <div class="widget-content">
+                           📌 Newton’s 2nd Law (2A Physics) <br>
+
+📌 Factorization Q (3B Math) <br>
+
+📌 Exam prep Q (2C Physics)
+
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleRightSidebar() {
+            const sidebar = document.querySelector(".right-sidebar");
+            sidebar.classList.toggle("visible");
+        }
+    </script>
+
+
 </body>
 </html>
