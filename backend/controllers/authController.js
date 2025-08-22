@@ -35,7 +35,7 @@ exports.login = async (req, res) => {
 };
 
 exports.getDashboard = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/pages/student-dashboard.html'));
+    res.sendFile(path.join(__dirname, '../../frontend/pages/admin-dashboard.html'));
 };
 
 
