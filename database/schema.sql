@@ -1,3 +1,11 @@
+
+
+
+
+
+
+
+
 schools ──┬──< academic_years ──< terms
           ├──< users >──┬──< user_roles >── roles >──< role_permissions >── permissions
           │             └──< notifications
