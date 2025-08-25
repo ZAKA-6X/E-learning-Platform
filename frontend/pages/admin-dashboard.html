@@ -29,7 +29,7 @@
   </header>
 
   <!-- Conteneur principal -->
-  <div class="main-container">
+<div class="main-container">
     <!-- Barre latérale gauche (refonte en hubs) -->
     <nav class="left-sidebar" aria-label="Navigation principale">
       <!-- Accueil -->
@@ -75,7 +75,7 @@
           <a href="#" class="sidebar-item" data-nav="classes">
             <span class="sidebar-icon"><i class="fa-solid fa-layer-group"></i></span> Classes & groupes
           </a>
-          <a href="#" class="sidebar-item" data-nav="subjects">
+          <a href="#" class="sidebar-item" data-nav="matiere">
             <span class="sidebar-icon"><i class="fa-solid fa-list-check"></i></span> Matières / Programmes
           </a>
           <a href="#" class="sidebar-item" data-nav="lessons">
@@ -232,160 +232,136 @@
       </div>
     </nav>
 
-    <!-- Zone centrale (exemple: informations élèves) -->
+    
+    <!-- Zone centrale -->
     <div class="centered-content">
       <div class="content-container">
-        <main class="content-area" id="view-students">
-          <div class="student-screen">
-            <!-- Liste des élèves -->
-            <section class="card students-list" aria-labelledby="students-title">
-              <div class="card-head">
-                <h3 id="students-title">Élèves</h3>
-                <div class="input-wrap">
-                  <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                  <input id="studentSearch" type="text" placeholder="ID ou Nom de l’élève" aria-label="Rechercher un élève"/>
-                </div>
-              </div>
-              <ul id="studentsUl" class="list" role="listbox" aria-label="Liste des élèves">
-                <li class="list-item active" role="option" aria-selected="true">
-                  <img class="avatar" src="https://i.pravatar.cc/40?img=12" alt="Photo d’Annette B."/>
-                  <div class="meta">
-                    <div class="name">Annette B.</div>
-                    <div class="sub">Classe VI</div>
-                  </div>
-                  <div class="id">F-32116</div>
-                  <div class="year">2022</div>
-                </li>
-                <li class="list-item" role="option">
-                  <img class="avatar" src="https://i.pravatar.cc/40?img=8" alt="Photo de Jerome B."/>
-                  <div class="meta">
-                    <div class="name">Jerome B.</div>
-                    <div class="sub">Classe VI</div>
-                  </div>
-                  <div class="id">M-75638</div>
-                  <div class="year">2022</div>
-                </li>
-                <li class="list-item" role="option">
-                  <img class="avatar" src="https://i.pravatar.cc/40?img=4" alt="Photo de Jane C."/>
-                  <div class="meta">
-                    <div class="name">Jane C.</div>
-                    <div class="sub">Classe VI</div>
-                  </div>
-                  <div class="id">M-45785</div>
-                  <div class="year">2022</div>
-                </li>
-              </ul>
-            </section>
 
-            <!-- Infos personnelles -->
-            <section class="card personal-info" aria-labelledby="pi-title">
-              <div class="card-head"><h3 id="pi-title">Informations personnelles</h3></div>
-              <div class="profile-row">
-                <img class="profile-avatar" src="https://i.pravatar.cc/80?img=12" alt="Photo d’Annette Braijen"/>
-                <div>
-                  <h2 class="profile-name">Annette Braijen <span class="tag">(Jen)</span></h2>
-                  <div class="muted">ID élève : <strong>F-32116</strong></div>
-                </div>
-              </div>
-              <div class="two-col">
-                <div>
-                  <h4 class="section-title">Détails de base</h4>
-                  <dl class="kv">
-                    <div><dt>Département</dt><dd>Science</dd></div>
-                    <div><dt>Classe</dt><dd>Neuf</dd></div>
-                    <div><dt>Genre</dt><dd>Féminin</dd></div>
-                    <div><dt>Mobile</dt><dd>+924 6742 5253</dd></div>
-                    <div><dt>Email</dt><dd>annettejen@gmail.com</dd></div>
-                    <div><dt>Date de naissance</dt><dd>05/02/2006</dd></div>
-                    <div><dt>Adresse</dt><dd>6391 Elgin St. Celina, Dela 10299</dd></div>
-                    <div><dt>Adresse actuelle</dt><dd>8502 Preston Rd. Inglewood, Maine 98380</dd></div>
-                    <div><dt>Loisirs</dt><dd>Jardinage, Musique, Histoire</dd></div>
-                  </dl>
-                </div>
-                <div>
-                  <h4 class="section-title">À propos de l’élève</h4>
-                  <p class="muted">
-                    Élève de 9e passionnée par les sciences et les maths. Aime lire, écrire,
-                    jouer de la guitare et débattre.
-                  </p>
-                  <h4 class="section-title">Certification</h4>
-                  <ul class="bullets">
-                    <li>2015 – 2016 • Junior school certificate, Nalanda High School, Sumansangi</li>
-                  </ul>
-                </div>
-              </div>
-            </section>
+        <!-- Accueil -->
+        <section class="content-section" id="home" style="display:block;">
+          <h2>Accueil</h2>
+          <p>This is the Home section part.</p>
+        </section>
 
-            <!-- Activité & relevé de notes -->
-            <div class="right-col">
-              <section class="card activity" aria-labelledby="activity-title">
-                <div class="card-head"><h3 id="activity-title">Activité</h3></div>
-                <div class="calendar" role="grid" aria-label="Calendrier juin 2021">
-                  <div class="cal-head" role="group" aria-label="Navigation calendrier">
-                    <button class="cal-nav" type="button" aria-label="Mois précédent"><i class="fa-solid fa-chevron-left"></i></button>
-                    <div class="cal-month">Juin 2021</div>
-                    <button class="cal-nav" type="button" aria-label="Mois suivant"><i class="fa-solid fa-chevron-right"></i></button>
-                  </div>
-                  <div class="cal-grid cal-dow" aria-hidden="true">
-                    <span>Lu</span><span>Ma</span><span>Me</span><span>Je</span><span>Ve</span><span>Sa</span><span>Di</span>
-                  </div>
-                  <div class="cal-grid cal-days">
-                    <span class="muted">30</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span>
-                    <span>7</span><span class="is-today">8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span>
-                    <span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span>
-                    <span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span>
-                    <span>28</span><span>29</span><span>30</span><span class="muted">1</span><span class="muted">2</span><span class="muted">3</span><span class="muted">4</span>
-                  </div>
-                  <div class="day-notes">
-                    <div><strong>Mercredi :</strong> Très bonne participation et lecture attentive.</div>
-                    <div><strong>Devoir :</strong> Devoir rendu, élève très active.</div>
-                  </div>
-                </div>
-              </section>
+        <!-- Administration -->
+        <section class="content-section" id="admin" style="display:none;">
+          <h2>Administration</h2>
+          <p>This is the Administration section part.</p>
+        </section>
 
-              <section class="card result-sheet" aria-labelledby="results-title">
-                <div class="card-head">
-                  <h3 id="results-title">Relevé de notes</h3>
-                  <select class="select" aria-label="Type d’examen">
-                    <option>Examen annuel</option>
-                    <option>Mi-semestre</option>
-                  </select>
-                </div>
-                <table class="table" role="table" aria-label="Notes par matière">
-                  <thead>
-                    <tr><th>Matière</th><th>Note obtenue</th><th>Appréciation</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr><td>Maths</td><td>95/100</td><td>Très bien</td></tr>
-                    <tr><td>Anglais</td><td>88/100</td><td>Bien</td></tr>
-                    <tr><td>Arabe</td><td>80/100</td><td>Bien</td></tr>
-                    <tr class="bad"><td>Physique</td><td>32/100</td><td>Échec</td></tr>
-                    <tr><td>Chimie</td><td>70/100</td><td>Bien</td></tr>
-                    <tr><td>SVT</td><td>63/100</td><td>Passable</td></tr>
-                  </tbody>
-                </table>
-              </section>
-            </div>
-          </div>
-        </main>
+        <!-- Rôles & permissions -->
+        <section class="content-section" id="roles" style="display:none;">
+          <h2>Rôles & permissions</h2>
+          <p>This is the Roles & Permissions section part.</p>
+        </section>
 
-        <!-- Barre latérale droite (facultative) -->
-        <aside class="right-sidebar" aria-label="Informations complémentaires">
-          <button class="close-sidebar" type="button">✖</button>
-          <div class="widget">
-            <div class="widget-header">Urgent</div>
-            <div class="widget-content">
-              <p><strong>25 mars :</strong> Examen de mathématiques</p>
-              <p><strong>28 mars :</strong> Réunion de projet</p>
-              <p><strong>30 mars :</strong> Remise du rapport</p>
-            </div>
-          </div>
-        </aside>
+        <!-- Enseignants -->
+        <section class="content-section" id="teachers" style="display:none;">
+          <h2>Enseignants</h2>
+          <p>This is the Teachers section part.</p>
+        </section>
+
+        <!-- Élèves -->
+        <section class="content-section" id="students" style="display:none;">
+          <h2>Élèves</h2>
+          <p>This is the Students section part.</p>
+        </section>
+
+        <!-- Parents -->
+        <section class="content-section" id="guardians" style="display:none;">
+          <h2>Parents / Tuteurs</h2>
+          <p>This is the Guardians section part.</p>
+        </section>
+
+        <!-- Matiere / Programme -->
+        <section class="content-section" id="matiere" style="display:none;">
+            <h2>Matiere / Programmes</h2>
+            <ul id="matiere-list"></ul>
+        </section>
+
+
       </div>
     </div>
-  </div>
+    
+    <!-- Barre latérale droite (facultative) -->
+    <aside class="right-sidebar" aria-label="Informations complémentaires">
+      <div class="widget">
+        <div class="widget-content">
+          <div id="calendar"></div>
+        </div>
+      </div>
+      <br>
+      <div class="widget">
+        <div class="widget-header">Urgent</div>
+        <div class="widget-content">
+          <p><strong>25 mars :</strong> Examen de math</p>
+          <p><strong>28 mars :</strong> Réunion de projet</p>
+          <p><strong>30 mars :</strong> Remise du rapport</p>
+        </div>
+      </div>
+      <script>
+        // Simple real-time calendar (month view)
+        function renderCalendar() {
+          const calendarEl = document.getElementById('calendar');
+          const now = new Date();
+          const month = now.getMonth();
+          const year = now.getFullYear();
+
+          // Get month name in French
+          const monthNames = [
+            "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+            "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+          ];
+          const daysShort = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+          // First day of month
+          const firstDay = new Date(year, month, 1);
+          // Last day of month
+          const lastDay = new Date(year, month + 1, 0);
+
+          let html = `<div class="calendar-header"><strong>${monthNames[month]} ${year}</strong></div>`;
+          html += `<table class="calendar-table"><thead><tr>`;
+          daysShort.forEach(day => html += `<th>${day}</th>`);
+          html += `</tr></thead><tbody><tr>`;
+
+          // Fill empty cells before first day
+          let startDay = firstDay.getDay(); // Sunday=0
+          startDay = startDay === 0 ? 6 : startDay - 1; // Make Monday=0
+          for (let i = 0; i < startDay; i++) html += `<td></td>`;
+
+          // Fill days
+          for (let d = 1; d <= lastDay.getDate(); d++) {
+            const today = (d === now.getDate());
+            html += `<td${today ? ' class="calendar-today"' : ''}>${d}</td>`;
+            if ((startDay + d) % 7 === 0 && d !== lastDay.getDate()) html += `</tr><tr>`;
+          }
+
+          // Fill empty cells after last day
+          let endDay = (startDay + lastDay.getDate()) % 7;
+          if (endDay !== 0) for (let i = endDay; i < 7; i++) html += `<td></td>`;
+          html += `</tr></tbody></table>`;
+
+          calendarEl.innerHTML = html;
+        }
+
+        // Basic styles for calendar
+        const style = document.createElement('style');
+        style.textContent = `
+          .calendar-header { text-align:center; margin-bottom:8px; }
+          .calendar-table { width:100%; border-collapse:collapse; font-size:0.95em; }
+          .calendar-table th, .calendar-table td { border:1px solid #eee; width:14%; height:28px; text-align:center; }
+          .calendar-today { background:#0078d4; color:#fff; border-radius:50%; }
+        `;
+        document.head.appendChild(style);
+
+        renderCalendar();
+      </script>
+    </aside>
 
   <!-- Optional separate scripts -->
-  <script src="../js/admin-dashboard.js"></script>
+  <script src="../js/navbar.js"></script>
+  <script src="../js/navbar.js"></script>
+  <script src="../js/matiere.js"></script>
+
 </body>
 </html>

@@ -178,7 +178,21 @@ button,input,select{font:inherit}
 .table tr.bad td{color:var(--bad); font-weight:700}
 
 /* ---------- Right Sidebar from your app (kept hidden unless used) ---------- */
-.right-sidebar{display:none}
+.right-sidebar {
+  display: block;
+  width: 280px;
+  flex: 0 0 280px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  height: calc(100vh - 40px - 64px);
+  position: sticky;
+  top: 80px;
+  overflow-y: auto;
+}
+
 
 /* ---------- Responsive ---------- */
 @media (max-width:1200px){

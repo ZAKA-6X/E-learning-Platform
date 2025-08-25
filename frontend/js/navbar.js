@@ -202,3 +202,23 @@
     bindStudentSearch();
   });
 })();
+
+const navItems = document.querySelectorAll('.sidebar-item');
+const sections = document.querySelectorAll('.content-section');
+
+navItems.forEach(item => {
+  item.addEventListener('click', e => {
+    e.preventDefault();
+
+    // toggle active link
+    navItems.forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+
+    // hide all sections
+    sections.forEach(sec => sec.style.display = 'none');
+
+    // show target section
+    const target = document.getElementById(item.dataset.nav);
+    if (target) target.style.display = 'block';
+  });
+});
