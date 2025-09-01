@@ -1,32 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ClicaEd - Login</title>
-  <link rel="stylesheet" href="../css/login.css">
-</head>
-<body>
-  <div class="login-wrapper">
-    <!-- Left side image -->
-    <div class="login-image">
-      <img src="../assets/logo.png" alt="ClicaEd preview">
-    </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClicaEd - Login</title>
+    <link rel="stylesheet" href="../css/login.css" />
+  </head>
+  <body>
+    <div class="login-wrapper">
+      <!-- Left side image -->
+      <div class="login-image">
+        <img src="../assets/logo.png" alt="ClicaEd preview" />
+      </div>
 
-    <!-- Right side form -->
-    <div class="login-box">
-      <h1 class="login-logo">ClicaEd</h1>
-      <form action="/login" method="POST">
-        <div class="form-group">
-          <input type="email" placeholder="Email" name="email" required>
-        </div>
-        <div class="form-group">
-          <input type="password" placeholder="Password" name="password" required>
-        </div>
-        <button type="submit" class="btn">Login</button>
-      </form>
+      <!-- Right side form -->
+      <div class="login-box">
+        <h1 class="login-logo">ClicaEd</h1>
+        <form action="/login" method="POST">
+          <div class="form-group">
+            <input type="email" placeholder="Email" name="email" required />
+          </div>
+          <div class="form-group">
+            <input
+              type="password"
+              placeholder="Password"
+              name="password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn">Login</button>
+        </form>
+      </div>
     </div>
-  </div>
-  <script src="../js/auth.js" defer></script>
-</body>
+    <script src="../js/auth.js" defer></script>
+  </body>
 </html>

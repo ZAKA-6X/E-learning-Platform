@@ -1,8 +1,18 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getAllMatieres } = require('../controllers/adminController');
-const auth = require('../middleware/authMiddleware');
+const auth = require("../middleware/authMiddleware");
+const {
+  getAllMatieres,
+  getStudentsCountKPI,
+  getUpcomingExamsCountKPI,
+} = require("../controllers/adminController");
 
-router.get('/matieres', auth, getAllMatieres);
+// --- KPI routes (namespaced) ---
+router.get("/kpis/exams-upcoming-count", auth, getUpcomingExamsCountKPI);
+router.get("/kpis/students-count", auth, getStudentsCountKPI);
+
+
+// --- Non-KPI routes ---
+router.get("/matieres", auth, getAllMatieres);
 
 module.exports = router;

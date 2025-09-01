@@ -12,6 +12,8 @@ Project structure and setup for E-learning Platform.
     create matieres table,
     add matieres id in cours table,
     display matieres in its page (matieres and programmes),
+    display number of student in admin dashboard,
+    
 
 
 todo: toxic comments, posts, formation enseignat,

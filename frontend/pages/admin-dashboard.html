@@ -13,6 +13,7 @@
 
   <!-- Metadata -->
   <meta name="description" content="Plateforme ClicaEd — gestion scolaire (utilisateurs, cours, présence, communication, rapports).">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <!-- En‑tête -->
@@ -238,11 +239,63 @@
       <div class="content-container">
 
         <!-- Accueil -->
-        <section class="content-section" id="home" style="display:block;">
-          <h2>Accueil</h2>
-          <p>This is the Home section part.</p>
-        </section>
+      <section class="content-section" id="home" style="display:block;">
+        <div class="dash-head">
+          <h2 class="dash-title">Tableau de bord</h2>
+          <div class="dash-overview">Overview</div>
+        </div>
 
+        <!-- KPI STRIP -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-gradient-1">
+            <div class="kpi-top">
+              <span class="kpi-title">Élèves</span>
+              <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div class="kpi-value" id="kpi-students">...</div>
+            <div class="kpi-trend up">Augmenté de 3%</div>
+          </div>
+
+          <div class="kpi-card kpi-gradient-2">
+            <div class="kpi-top">
+              <span class="kpi-title">Présence aujourd’hui</span>
+              <i class="fa-solid fa-user-check"></i>
+            </div>
+            <div class="kpi-value" id="kpi-attendance">95%</div>
+            <div class="kpi-trend down">Diminué de 1%</div>
+          </div>
+
+          <div class="kpi-card kpi-gradient-3">
+            <div class="kpi-top">
+              <span class="kpi-title">Examens à venir</span>
+              <i class="fa-solid fa-file-pen"></i>
+            </div>
+            <div class="kpi-value" id="kpi-exams">...</div>
+            <div class="kpi-trend up">+1 ajouté</div>
+          </div>
+
+          <div class="kpi-card kpi-gradient-4">
+            <div class="kpi-top">
+              <span class="kpi-title">Réunions</span>
+              <i class="fa-solid fa-handshake"></i>
+            </div>
+            <div class="kpi-value" id="kpi-meetings">2</div>
+            <div class="kpi-trend up">+1 cette semaine</div>
+          </div>
+        </div>
+
+        <!-- CHARTS ROW -->
+        <div class="charts-grid">
+          <div class="card chart-card">
+            <div class="card-head"><h3>Visit & Sales Statistics</h3></div>
+            <canvas id="barStats" height="140"></canvas>
+          </div>
+          <div class="card chart-card">
+            <div class="card-head"><h3>Traffic Sources</h3></div>
+            <canvas id="doughnutTraffic" height="140"></canvas>
+          </div>
+        </div>
+      </section>
         <!-- Administration -->
         <section class="content-section" id="admin" style="display:none;">
           <h2>Administration</h2>
@@ -360,8 +413,8 @@
 
   <!-- Optional separate scripts -->
   <script src="../js/navbar.js"></script>
-  <script src="../js/navbar.js"></script>
   <script src="../js/matiere.js"></script>
+  <script src="../js/kpi.js"></script>
 
 </body>
 </html>

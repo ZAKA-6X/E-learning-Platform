@@ -18,10 +18,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Routes
 app.use('/', require('./routes/authRoutes'));
 app.use('/', require('./routes/fileRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/admin', require('./routes/adminRoutes'));
 
 
-// Redirect root to login
+// Redirect root to login   
 app.get('/', (req, res) => {
     res.redirect('/login');
 });
