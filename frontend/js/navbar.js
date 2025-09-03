@@ -1,224 +1,211 @@
-// admin.js
-// Admin panel interactions placeholder
-/* admin-dashboard.js
-   – Gère hubs (collapsibles), sélection active, routing simple, persistance.
-*/
+'use strict';
+
+// ClicaEd - Universal Navbar Controller
+// Features:
+// - Role-aware nav items filtering via data-roles="student,admin"
+// - Section routing via data-section or inferred from id="nav-xxx" -> #xxx
+// - Active state + aria-current, show/hide .content-section
+// - Hash routing (#sectionId) + localStorage persistence per dashboard & role
+// - Works with multiple scopes via [data-dashboard-scope]; falls back to whole document
+// - Sidebar toggle support for elements with .sidebar-toggle and .right-sidebar
 
 (function () {
-  const LS_KEYS = {
-    groups: 'adminSidebar.groups',   // { groupId: true/false }
-    active: 'adminSidebar.active',   // "navId"
-  };
+  const STORAGE_NS = 'clicaed.nav';
 
-  // ===== Helpers =====
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  const $  = (sel, root = document) => root.querySelector(sel);
+  const qsAll = (root, sel) => Array.from(root.querySelectorAll(sel));
 
-  // calcule une hauteur max pour l'anim (auto -> px)
-  function setGroupExpanded(group, expanded) {
-    if (!group) return;
-    if (expanded) {
-      group.hidden = false;
-      group.style.maxHeight = group.scrollHeight + 'px';
-      // après transition, retire la valeur pour s'adapter au contenu futur
-      group.addEventListener('transitionend', function onEnd() {
-        group.style.maxHeight = '';
-        group.removeEventListener('transitionend', onEnd);
-      });
-    } else {
-      group.style.maxHeight = group.scrollHeight + 'px'; // set current
-      // force reflow
-      // eslint-disable-next-line no-unused-expressions
-      group.offsetHeight;
-      group.style.maxHeight = '0px';
-      // à la fin, cache réellement
-      group.addEventListener('transitionend', function onEnd() {
-        group.hidden = true;
-        group.removeEventListener('transitionend', onEnd);
-      });
-    }
-  }
-
-  function saveGroupsState() {
-    const state = {};
-    $$('.sidebar-section').forEach((sec, i) => {
-      const header = $('.sidebar-header.collapsible', sec);
-      const group  = $('.sidebar-group', sec);
-      if (!header || !group) return;
-      const id = header.dataset.groupId || `g${i}`;
-      header.dataset.groupId = id;
-      state[id] = header.getAttribute('aria-expanded') === 'true';
-    });
-    try { localStorage.setItem(LS_KEYS.groups, JSON.stringify(state)); } catch {}
-  }
-
-  function loadGroupsState() {
+  function decodeJwtRoleFromToken() {
+    const token =
+      localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+    if (!token.includes('.')) return null;
     try {
-      const obj = JSON.parse(localStorage.getItem(LS_KEYS.groups) || '{}');
-      $$('.sidebar-section').forEach((sec, i) => {
-        const header = $('.sidebar-header.collapsible', sec);
-        const group  = $('.sidebar-group', sec);
-        if (!header || !group) return;
-        const id = header.dataset.groupId || `g${i}`;
-        header.dataset.groupId = id;
-        const expanded = obj[id] !== undefined ? !!obj[id] : header.getAttribute('aria-expanded') === 'true';
-        header.setAttribute('aria-expanded', String(expanded));
-        // chevron
-        const chev = $('.fa-chevron-down', header);
-        if (chev) chev.style.transform = expanded ? 'rotate(180deg)' : '';
-        // group
-        if (!expanded) {
-          group.hidden = true;
-          group.style.maxHeight = '0px';
-        }
-      });
-    } catch {}
+      const base64 = token.split('.')[1];
+      const json = JSON.parse(
+        atob(base64.replace(/-/g, '+').replace(/_/g, '/'))
+      );
+      return json?.role || json?.user_role || null;
+    } catch {
+      return null;
+    }
   }
 
-  // ===== Collapsibles =====
-  function bindCollapsibles() {
-    $$('.sidebar-header.collapsible').forEach((btn) => {
-      const group = btn.nextElementSibling;
-      const chev  = $('.fa-chevron-down', btn);
-
-      btn.addEventListener('click', () => {
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', String(!expanded));
-        if (chev) chev.style.transform = expanded ? '' : 'rotate(180deg)';
-        setGroupExpanded(group, !expanded);
-        saveGroupsState();
-      });
-
-      // accessibilité: espace/entrée
-      btn.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          btn.click();
-        }
-      });
-    });
+  function getRole() {
+    return (
+      document.body?.dataset?.role ||
+      localStorage.getItem('role') ||
+      decodeJwtRoleFromToken() ||
+      'student'
+    );
   }
 
-  // ===== Active nav & routing =====
-  // Les liens ont data-nav="xxx"
-  // Les vues centrales ont data-view="xxx"
-  function setActive(navId, pushHistory = true) {
-    if (!navId) return;
+  function getDashboardId() {
+    // Allow pages to set <body data-dashboard="student">; else use path
+    return document.body?.dataset?.dashboard || window.location.pathname;
+  }
 
-    // 1) visuel actif
-    $$('.sidebar-item').forEach((a) => {
-      a.classList.toggle('active', a.dataset.nav === navId);
+  function findBestSectionId(contentRoot, guessId) {
+    if (!guessId) return null;
+    // exact
+    const exact = contentRoot.querySelector(`#${CSS.escape(guessId)}`);
+    if (exact) return exact.id;
+    const sections = qsAll(contentRoot, '.content-section[id]');
+    // starts-with
+    const starts = sections.find((s) => s.id.startsWith(guessId));
+    if (starts) return starts.id;
+    // contains (either direction)
+    const contains = sections.find(
+      (s) => s.id.includes(guessId) || guessId.includes(s.id)
+    );
+    if (contains) return contains.id;
+    return null;
+  }
+
+  function normalizeLinkToSection(navEl, contentRoot) {
+    const links = qsAll(navEl, '.sidebar-item');
+
+    links.forEach((a) => {
+      // role filter
+      const role = getRole();
+      const roles = (a.dataset.roles || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (roles.length && !roles.includes(role)) {
+        a.setAttribute('hidden', '');
+        a.classList.add('is-hidden-role');
+        return;
+      }
+
+      // resolve target section
+      let target = (a.dataset.section || a.dataset.target || '').trim();
+      if (!target) {
+        // infer from id="nav-xxx"
+        const id = a.id || '';
+        if (id.startsWith('nav-')) target = id.slice(4);
+      }
+      if (target) {
+        const best = findBestSectionId(contentRoot, target);
+        if (best) {
+          a.dataset.section = best;
+        } else {
+          // mark as external if no matching section in this page
+          a.dataset.external = 'true';
+        }
+      } else {
+        a.dataset.external = 'true';
+      }
     });
 
-    // 2) show view correspondante
-    const views = $$('[data-view]');
-    let shown = false;
-    views.forEach((v) => {
-      const match = v.dataset.view === navId;
-      v.style.display = match ? '' : 'none';
-      if (match) shown = true;
+    return links.filter((a) => a.dataset.external !== 'true');
+  }
+
+  function activateSection({ navEl, contentRoot, links, targetId, save = true, focus = true }) {
+    if (!targetId) return;
+    const sections = qsAll(contentRoot, '.content-section');
+
+    // Active link state
+    links.forEach((l) => {
+      const isActive = l.dataset.section === targetId;
+      l.classList.toggle('active', isActive);
+      if (isActive) l.setAttribute('aria-current', 'page');
+      else l.removeAttribute('aria-current');
     });
 
-    // 3) s'il n'y a pas de vue correspondante, on ne plante pas
-    if (!shown && views.length) {
-      // afficher la première vue par défaut
-      views[0].style.display = '';
+    // Show/hide sections (uses [hidden] for a11y and .active for styling)
+    sections.forEach((s) => {
+      const on = s.id === targetId;
+      s.classList.toggle('active', on);
+      s.toggleAttribute('hidden', !on);
+    });
+
+    // Persist + update hash
+    if (save) {
+      const key = `${STORAGE_NS}:last:${getDashboardId()}:${getRole()}`;
+      try {
+        localStorage.setItem(key, targetId);
+      } catch {}
+      const h = `#${encodeURIComponent(targetId)}`;
+      if (location.hash !== h) history.replaceState(null, '', h);
     }
 
-    // 4) mémorise + URL
-    try { localStorage.setItem(LS_KEYS.active, navId); } catch {}
-    if (pushHistory) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('view', navId);
-      history.pushState({ view: navId }, '', url.toString());
-    }
-
-    // 5) ouvrir automatiquement le groupe qui contient le lien actif
-    const activeLink = $(`.sidebar-item[data-nav="${navId}"]`);
-    if (activeLink) {
-      const sec = activeLink.closest('.sidebar-section');
-      const header = $('.sidebar-header.collapsible', sec || document);
-      const group  = header && header.nextElementSibling;
-      if (header && group && header.getAttribute('aria-expanded') !== 'true') {
-        header.setAttribute('aria-expanded', 'true');
-        const chev = $('.fa-chevron-down', header);
-        if (chev) chev.style.transform = 'rotate(180deg)';
-        setGroupExpanded(group, true);
-        saveGroupsState();
+    // Focus section without scrolling
+    if (focus) {
+      const activeSection = contentRoot.querySelector(
+        `#${CSS.escape(targetId)}`
+      );
+      if (activeSection) {
+        activeSection.setAttribute('tabindex', '-1');
+        activeSection.focus({ preventScroll: true });
       }
     }
   }
 
-  function bindNavClicks() {
-    // clic/re-clic: re-sélectionne et remonte la même vue
-    $$('.sidebar-item').forEach((a) => {
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        const navId = a.dataset.nav;
-        setActive(navId);
+  function initScope(scopeEl) {
+    const navEl = scopeEl.querySelector('.left-sidebar');
+    const contentRoot =
+      scopeEl.querySelector('.content-container') || document;
+    if (!navEl) return;
+
+    // Build link->section map (and filter by role)
+    const links = normalizeLinkToSection(navEl, contentRoot);
+    const sections = qsAll(contentRoot, '.content-section');
+
+    // Delegate clicks
+    navEl.addEventListener('click', (e) => {
+      const a = e.target.closest('.sidebar-item');
+      if (!a) return;
+      if (a.dataset.external === 'true') return; // let real links go
+      e.preventDefault();
+      activateSection({
+        navEl,
+        contentRoot,
+        links,
+        targetId: a.dataset.section,
+        save: true,
+        focus: true,
       });
     });
-  }
 
-  function initViews() {
-    // Si vous avez plusieurs vues, marquez-les avec data-view="students", etc.
-    // Exemple existant dans votre HTML : <main ... id="view-students" data-view="students">
-    // On récupère ?view=... ou le dernier actif sauvegardé.
-    const url = new URL(window.location.href);
-    const qView = url.searchParams.get('view');
-    const saved = localStorage.getItem(LS_KEYS.active);
-    const fallback = $('.sidebar-item.active')?.dataset.nav || $$('[data-view]')[0]?.dataset.view;
-
-    setActive(qView || saved || fallback || '', false);
-
-    // back/forward support
-    window.addEventListener('popstate', (e) => {
-      const view = e.state?.view || new URL(window.location.href).searchParams.get('view');
-      setActive(view, false);
-    });
-  }
-
-  // ===== Recherche élèves (optionnel, déjà dans votre page) =====
-  function bindStudentSearch() {
-    const search = $('#studentSearch');
-    const items  = $$('#studentsUl .list-item');
-    if (!search || !items.length) return;
-
-    search.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
-      items.forEach((li) => {
-        const t = li.innerText.toLowerCase();
-        li.style.display = t.includes(q) ? '' : 'none';
+    // Sidebar toggle (right panel)
+    qsAll(scopeEl, '.sidebar-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const rs = scopeEl.querySelector('.right-sidebar');
+        if (rs) rs.classList.toggle('visible');
       });
     });
+
+    // Initial route selection
+    const hashId = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+    const key = `${STORAGE_NS}:last:${getDashboardId()}:${getRole()}`;
+    const saved = localStorage.getItem(key);
+    const defaultId = links[0]?.dataset.section;
+
+    const isValid = (id) => id && sections.some((s) => s.id === id);
+    const initial = isValid(hashId)
+      ? hashId
+      : isValid(saved)
+      ? saved
+      : defaultId;
+
+    if (initial) {
+      activateSection({
+        navEl,
+        contentRoot,
+        links,
+        targetId: initial,
+        save: true,
+        focus: false,
+      });
+    }
   }
 
-  // ===== Boot =====
   document.addEventListener('DOMContentLoaded', () => {
-    loadGroupsState();
-    bindCollapsibles();
-    bindNavClicks();
-    initViews();
-    bindStudentSearch();
+    const scopes = document.querySelectorAll('[data-dashboard-scope]');
+    if (scopes.length) {
+      scopes.forEach(initScope);
+    } else {
+      // default: whole document as one scope
+      initScope(document);
+    }
   });
 })();
-
-const navItems = document.querySelectorAll('.sidebar-item');
-const sections = document.querySelectorAll('.content-section');
-
-navItems.forEach(item => {
-  item.addEventListener('click', e => {
-    e.preventDefault();
-
-    // toggle active link
-    navItems.forEach(i => i.classList.remove('active'));
-    item.classList.add('active');
-
-    // hide all sections
-    sections.forEach(sec => sec.style.display = 'none');
-
-    // show target section
-    const target = document.getElementById(item.dataset.nav);
-    if (target) target.style.display = 'block';
-  });
-});

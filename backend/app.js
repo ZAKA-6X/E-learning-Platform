@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 
 
+
 dotenv.config();
 const app = express();
 const port = process.env.PORT;
@@ -19,7 +20,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/', require('./routes/authRoutes'));
 app.use('/', require('./routes/fileRoutes'));
 app.use('/admin', require('./routes/adminRoutes'));
-
+app.use('/todos', require('./routes/todosRoutes'));
 
 // Redirect root to login   
 app.get('/', (req, res) => {
