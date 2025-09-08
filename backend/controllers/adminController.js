@@ -9,6 +9,7 @@ exports.getAllMatieres = async (req, res) => {
     const bypass = req.query.all === "1"; // /api/admin/matieres?all=1
 
     let query = supabase.from("subjects").select("name");
+    
 
     if (!bypass && schoolId) {
       query = query.eq("school_id", schoolId);

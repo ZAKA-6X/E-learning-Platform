@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ClicaEd - Tableau de bord</title>
-    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/post.css" />
+
+    <link rel="icon" type="image/png" href="../assets/icon.png" />
     <!-- Font Awesome 6 -->
     <link
       rel="stylesheet"
@@ -28,7 +31,7 @@
       </div>
 
       <div class="user-menu" id="user-menu" name="user-menu">
-        <button class="action-button" id="btn-creer" name="creer" title="Créer">
+        <button class="action-button" id="btn-creer" name="creer" title="Créer" data-open="publications">
           <i class="fa-solid fa-plus"></i> Créer
         </button>
         <div class="user-avatar" id="user-avatar" name="user-avatar">U</div>
@@ -39,16 +42,14 @@
     <div class="main-container" id="main-container" name="main-container">
       <!-- Left Sidebar -->
       <nav class="left-sidebar" id="left-sidebar" name="left-sidebar">
-<a
+        <a
           href="#"
           class="sidebar-item"
           id="nav-accueil"
           name="accueil"
           title="Accueil"
         >
-          <span class="sidebar-icon"
-            ><i class="fa-solid fa-house"></i
-          ></span>
+          <span class="sidebar-icon"><i class="fa-solid fa-house"></i></span>
           Accueil
         </a>
         <!-- Vie étudiante -->
@@ -66,9 +67,7 @@
             name="annonces"
             title="Annonces"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-bullhorn"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-bullhorn"></i></span>
             Annonces
           </a>
 
@@ -79,9 +78,7 @@
             name="orientation"
             title="Orientation et carrière"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-compass"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-compass"></i></span>
             Orientation et carrière
           </a>
         </div>
@@ -97,9 +94,7 @@
             name="notes-progression"
             title="Notes & progression"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-chart-line"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-chart-line"></i></span>
             Notes & progression
           </a>
 
@@ -110,9 +105,7 @@
             name="devoirs"
             title="Devoirs"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-list-check"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-list-check"></i></span>
             Devoirs
           </a>
 
@@ -123,9 +116,7 @@
             name="calendrier-examens"
             title="Calendrier des examens"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-calendar-days"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-calendar-days"></i></span>
             Calendrier des examens
           </a>
 
@@ -136,9 +127,7 @@
             name="bibliotheque-ressources"
             title="Bibliothèque de ressources"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-book-open"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-book-open"></i></span>
             Bibliothèque de ressources
           </a>
         </div>
@@ -158,9 +147,7 @@
             name="messagerie"
             title="Messagerie"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-envelope"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-envelope"></i></span>
             Messagerie
           </a>
 
@@ -187,9 +174,7 @@
             name="taches"
             title="Liste des tâches"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-list-check"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-list-check"></i></span>
             Liste des tâches
           </a>
 
@@ -224,9 +209,7 @@
             name="aide"
             title="Aide"
           >
-            <span class="sidebar-icon"
-              ><i class="fa-solid fa-circle-question"></i
-            ></span>
+            <span class="sidebar-icon"><i class="fa-solid fa-circle-question"></i></span>
             Aide
           </a>
         </div>
@@ -285,9 +268,20 @@
             <p>Communiquez avec vos professeurs et camarades.</p>
           </section>
 
-          <section id="publications" class="content-section">
+          <section id="publications" class="content-section" data-section="publications">
             <h2>🖼 Publications</h2>
-            <p>Voir et partager des publications.</p>
+            <!-- Reusable Post Composer (loaded dynamically on "Créer") -->
+            <div
+              id="post-composer-host"
+              data-component="post-composer"
+              data-audience="school"
+              data-role="student"
+              data-ready="false"
+            ></div>
+            <!-- Where new posts will appear (optimistic render) -->
+            <div id="feed" class="card" style="margin-top:14px;">
+              <div class="muted">Rien a affiche....</div>
+            </div>
           </section>
 
           <section id="taches" class="content-section">
@@ -332,5 +326,7 @@
     <script src="../js/navbar.js" id="navbar-js" name="navbar-js"></script>
     <script src="../js/student-app.js"></script>
     <script src="../js/todolist.js"></script>
+    <script src="../js/post.js"></script>
+
   </body>
 </html>

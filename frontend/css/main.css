@@ -1,0 +1,110 @@
+/* ===== ClicaEd — Global Theme (extracted from dashboard.css) ===== */
+/* Reset / Base */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:#f7f7fb; color:#23262d;
+  font:14px/1.5 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+img{display:block; max-width:100%}
+button,input,select,textarea{font:inherit}
+
+/* Palette / Tokens */
+:root{
+  --bg:#f7f7fb;
+  --card:#fff;
+  --ink:#23262d;
+  --muted:#7a7f8c;
+  --line:#ececf2;
+  --primary:#6a5acd;      /* soft indigo */
+  --primary-ink:#4e56c5;
+  --accent:#f2f3ff;
+  --good:#1aa34a;
+  --bad:#e04343;
+  --shadow:0 8px 24px rgba(16,22,34,.06);
+}
+
+/* Layout shells */
+.main-container{display:flex; gap:20px; padding:20px}
+.centered-content{flex:1; display:flex; justify-content:center}
+.content-container{width:100%; max-width:1180px}
+
+/* Generic sections */
+.dash-head{display:flex; align-items:center; justify-content:space-between; margin:6px 0 14px}
+.dash-title{margin:0}
+.dash-overview{font-size:12px; color:var(--muted)}
+
+/* Header */
+.header{
+  height:64px; background:#fff; border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 16px 0 20px; position:sticky; top:0; z-index:50;
+}
+.logo{font-weight:700; letter-spacing:.2px}
+.search-bar{flex:1; max-width:520px; margin:0 16px}
+.search-bar input{
+  width:100%; border:1px solid var(--line); background:#fff;
+  height:36px; border-radius:10px; padding:0 12px; outline:none;
+}
+.user-menu{display:flex; align-items:center; gap:10px}
+.action-button{
+  border:1px solid var(--line); background:#fff; padding:8px 12px; border-radius:10px;
+  cursor:pointer; transition:all .15s ease; box-shadow:none;
+}
+.action-button:hover{border-color:#e0e2ef; transform:translateY(-1px)}
+.user-avatar{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:#eef0ff;color:#4e56c5;font-weight:700
+}
+
+/* Left Sidebar */
+.left-sidebar{
+  width:240px; flex:0 0 240px; background:#fff; border:1px solid var(--line);
+  border-radius:12px; padding:14px 12px; height:calc(100vh - 40px - 64px);
+  position:sticky; top:80px; overflow:auto; box-shadow:var(--shadow);
+}
+.sidebar-section + .sidebar-section{margin-top:10px}
+.sidebar-header{
+  margin:6px 8px 6px; font-size:12px; text-transform:uppercase;
+  letter-spacing:.35px; color:#5f6273; font-weight:600;
+}
+.sidebar-item{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 10px; border-radius:10px; text-decoration:none;
+  color:var(--ink); font-weight:500; transition:background .15s ease, color .15s ease;
+  border:1px solid transparent;
+}
+.sidebar-item:hover{background:#fafafe}
+.sidebar-item.active{background:#eef0ff; color:#2f36b2; border-color:#dfe1ff; box-shadow:inset 0 0 0 1px #e9ebff}
+.sidebar-icon{width:18px; display:grid; place-items:center; color:#5961c7}
+.left-sidebar a{color:inherit; text-decoration:none}
+.left-sidebar a:visited{color:inherit}
+
+/* Cards */
+.card{
+  background:var(--card); border:1px solid var(--line);
+  border-radius:12px; box-shadow:var(--shadow); padding:16px;
+}
+.card + .card{margin-top:20px}
+.card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+.card-head h3{margin:0; font-size:16px}
+
+/* Utilities */
+.select{border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px 10px; font:inherit}
+.muted{color:var(--muted)}
+.tag{color:var(--muted); font-weight:500}
+
+/* Scrollbar tweak */
+.left-sidebar{scrollbar-width:thin}
+.left-sidebar::-webkit-scrollbar{width:8px}
+.left-sidebar::-webkit-scrollbar-thumb{background:#e0e2ef; border-radius:8px}
+
+/* Responsive */
+@media (max-width:1200px){
+  .content-container{max-width:960px}
+}
+@media (max-width:980px){
+  .main-container{gap:14px; padding:14px}
+  .left-sidebar{display:none}
+}

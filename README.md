@@ -13,6 +13,10 @@ Project structure and setup for E-learning Platform.
     add matieres id in cours table,
     display matieres in its page (matieres and programmes),
     display number of student in admin dashboard,
+
+    #####Student Part########
+    update navbar menu,
+    add todo Function,
     
 
 

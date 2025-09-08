@@ -5,18 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ClicaEd — Tableau de bord</title>
 
-  <!-- Icons (for nav icons) -->
+  <link rel="icon" type="image/png" href="../assets/icon.png" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-
-  <!-- Optional theme stylesheet (kept separate) -->
   <link rel="stylesheet" href="../css/dashboard.css" />
 
-  <!-- Metadata -->
   <meta name="description" content="Plateforme ClicaEd — gestion scolaire (utilisateurs, cours, présence, communication, rapports).">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <!-- En‑tête -->
+  <!-- En-tête -->
   <header class="header" role="banner">
     <div class="logo">ClicaEd</div>
     <div class="search-bar" role="search">
@@ -30,12 +27,12 @@
   </header>
 
   <!-- Conteneur principal -->
-<div class="main-container">
-    <!-- Barre latérale gauche (refonte en hubs) -->
+  <div class="main-container">
+    <!-- Barre latérale gauche (hubs) -->
     <nav class="left-sidebar" aria-label="Navigation principale">
       <!-- Accueil -->
       <div class="sidebar-section">
-        <a href="#" class="sidebar-item active" data-nav="home" title="Accueil">
+        <a href="#" class="sidebar-item active" id="nav-home" data-nav="home" title="Accueil">
           <span class="sidebar-icon"><i class="fa-solid fa-house"></i></span>
           <span>Accueil</span>
         </a>
@@ -43,24 +40,21 @@
 
       <!-- Hub des utilisateurs -->
       <div class="sidebar-section">
-        <button class="sidebar-header collapsible" type="button" aria-expanded="true">
-          <span><i class="fa-solid fa-user-group"></i> Hub des utilisateurs</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        </button>
+          <div class="sidebar-header">Hub des utilisateurs</div>
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" data-nav="admin">
+          <a href="#" class="sidebar-item" id="nav-admin" data-nav="admin">
             <span class="sidebar-icon"><i class="fa-solid fa-id-badge"></i></span> Administration
           </a>
-          <a href="#" class="sidebar-item" data-nav="roles">
+          <a href="#" class="sidebar-item" id="nav-roles" data-nav="roles">
             <span class="sidebar-icon"><i class="fa-solid fa-shield-halved"></i></span> Rôles & permissions
           </a>
-          <a href="#" class="sidebar-item" data-nav="teachers">
+          <a href="#" class="sidebar-item" id="nav-teachers" data-nav="teachers">
             <span class="sidebar-icon"><i class="fa-solid fa-chalkboard-user"></i></span> Enseignants
           </a>
-          <a href="#" class="sidebar-item" data-nav="students">
+          <a href="#" class="sidebar-item" id="nav-students" data-nav="students">
             <span class="sidebar-icon"><i class="fa-solid fa-user"></i></span> Élèves
           </a>
-          <a href="#" class="sidebar-item" data-nav="guardians">
+          <a href="#" class="sidebar-item" id="nav-guardians" data-nav="guardians">
             <span class="sidebar-icon"><i class="fa-solid fa-people-roof"></i></span> Parents / Tuteurs
           </a>
         </div>
@@ -68,21 +62,18 @@
 
       <!-- Hub des cours -->
       <div class="sidebar-section">
-        <button class="sidebar-header collapsible" type="button" aria-expanded="true">
-          <span><i class="fa-solid fa-book-open"></i> Hub des cours</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        </button>
+          <div class="sidebar-header">Hub des cours</div>
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" data-nav="classes">
+          <a href="#" class="sidebar-item" id="nav-classes" data-nav="classes">
             <span class="sidebar-icon"><i class="fa-solid fa-layer-group"></i></span> Classes & groupes
           </a>
-          <a href="#" class="sidebar-item" data-nav="matiere">
+          <a href="#" class="sidebar-item" id="nav-matiere" data-nav="matiere">
             <span class="sidebar-icon"><i class="fa-solid fa-list-check"></i></span> Matières / Programmes
           </a>
-          <a href="#" class="sidebar-item" data-nav="lessons">
+          <a href="#" class="sidebar-item" id="nav-lessons" data-nav="lessons">
             <span class="sidebar-icon"><i class="fa-solid fa-notes-medical"></i></span> Cours & leçons
           </a>
-          <a href="#" class="sidebar-item" data-nav="assignments">
+          <a href="#" class="sidebar-item" id="nav-assignments" data-nav="assignments">
             <span class="sidebar-icon"><i class="fa-solid fa-clipboard-check"></i></span> Devoirs & évaluations
           </a>
         </div>
@@ -90,18 +81,15 @@
 
       <!-- Présence & discipline -->
       <div class="sidebar-section">
-        <button class="sidebar-header collapsible" type="button" aria-expanded="true">
-          <span><i class="fa-solid fa-user-check"></i> Présence & discipline</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        </button>
+          <div class="sidebar-header">Présence & discipline</div>
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" data-nav="attendance">
+          <a href="#" class="sidebar-item" id="nav-attendance" data-nav="attendance">
             <span class="sidebar-icon"><i class="fa-regular fa-square-check"></i></span> Présences
           </a>
-          <a href="#" class="sidebar-item" data-nav="lateness">
+          <a href="#" class="sidebar-item" id="nav-lateness" data-nav="lateness">
             <span class="sidebar-icon"><i class="fa-regular fa-clock"></i></span> Retards & absences
           </a>
-          <a href="#" class="sidebar-item" data-nav="discipline">
+          <a href="#" class="sidebar-item" id="nav-discipline" data-nav="discipline">
             <span class="sidebar-icon"><i class="fa-solid fa-scale-balanced"></i></span> Incidents disciplinaires
           </a>
         </div>
@@ -109,18 +97,15 @@
 
       <!-- Contenu & ressources -->
       <div class="sidebar-section">
-        <button class="sidebar-header collapsible" type="button" aria-expanded="true">
-          <span><i class="fa-solid fa-folder-open"></i> Contenu & ressources</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        </button>
+          <div class="sidebar-header">Contenu & ressources</div>
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" data-nav="library">
+          <a href="#" class="sidebar-item" id="nav-library" data-nav="library">
             <span class="sidebar-icon"><i class="fa-solid fa-book"></i></span> Bibliothèque
           </a>
-          <a href="#" class="sidebar-item" data-nav="shared">
+          <a href="#" class="sidebar-item" id="nav-shared" data-nav="shared">
             <span class="sidebar-icon"><i class="fa-solid fa-share-nodes"></i></span> Ressources partagées
           </a>
-          <a href="#" class="sidebar-item" data-nav="school-docs">
+          <a href="#" class="sidebar-item" id="nav-school-docs" data-nav="school-docs">
             <span class="sidebar-icon"><i class="fa-regular fa-file-lines"></i></span> Documents scolaires
           </a>
         </div>
@@ -128,18 +113,15 @@
 
       <!-- Communication -->
       <div class="sidebar-section">
-        <button class="sidebar-header collapsible" type="button" aria-expanded="true">
-          <span><i class="fa-solid fa-bullhorn"></i> Communication</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        </button>
+          <div class="sidebar-header">Communication</div>
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" data-nav="announcements">
+          <a href="#" class="sidebar-item" id="nav-announcements" data-nav="announcements">
             <span class="sidebar-icon"><i class="fa-regular fa-message"></i></span> Annonces
           </a>
-          <a href="#" class="sidebar-item" data-nav="messaging">
+          <a href="#" class="sidebar-item" id="nav-messaging" data-nav="messaging">
             <span class="sidebar-icon"><i class="fa-solid fa-comments"></i></span> Messagerie
           </a>
-          <a href="#" class="sidebar-item" data-nav="channels">
+          <a href="#" class="sidebar-item" id="nav-channels" data-nav="channels">
             <span class="sidebar-icon"><i class="fa-solid fa-paper-plane"></i></span> Canaux externes (Email/SMS/WhatsApp)
           </a>
         </div>
@@ -147,7 +129,7 @@
 
       <!-- Calendrier -->
       <div class="sidebar-section">
-        <a href="#" class="sidebar-item" data-nav="calendar" title="Calendrier scolaire & événements">
+        <a href="#" class="sidebar-item" id="nav-calendar" data-nav="calendar" title="Calendrier scolaire & événements">
           <span class="sidebar-icon"><i class="fa-regular fa-calendar-days"></i></span>
           <span>Calendrier</span>
         </a>
@@ -155,24 +137,21 @@
 
       <!-- Rapports & analyses -->
       <div class="sidebar-section">
-        <button class="sidebar-header collapsible" type="button" aria-expanded="true">
-          <span><i class="fa-solid fa-chart-line"></i> Rapports & analyses</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        </button>
+          <div class="sidebar-header">Rapports & analyses</div>
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" data-nav="student-progress">
+          <a href="#" class="sidebar-item" id="nav-student-progress" data-nav="student-progress">
             <span class="sidebar-icon"><i class="fa-solid fa-chart-simple"></i></span> Progression des élèves
           </a>
-          <a href="#" class="sidebar-item" data-nav="teacher-activity">
+          <a href="#" class="sidebar-item" id="nav-teacher-activity" data-nav="teacher-activity">
             <span class="sidebar-icon"><i class="fa-solid fa-user-tie"></i></span> Activité des enseignants
           </a>
-          <a href="#" class="sidebar-item" data-nav="attendance-reports">
+          <a href="#" class="sidebar-item" id="nav-attendance-reports" data-nav="attendance-reports">
             <span class="sidebar-icon"><i class="fa-regular fa-square-poll-vertical"></i></span> Rapports de présence
           </a>
-          <a href="#" class="sidebar-item" data-nav="exam-reports">
+          <a href="#" class="sidebar-item" id="nav-exam-reports" data-nav="exam-reports">
             <span class="sidebar-icon"><i class="fa-solid fa-ranking-star"></i></span> Rapports d’examens
           </a>
-          <a href="#" class="sidebar-item" data-nav="dashboards">
+          <a href="#" class="sidebar-item" id="nav-dashboards" data-nav="dashboards">
             <span class="sidebar-icon"><i class="fa-solid fa-gauge-high"></i></span> Tableaux de bord
           </a>
         </div>
@@ -181,14 +160,13 @@
       <!-- Importations & intégrations -->
       <div class="sidebar-section">
         <button class="sidebar-header collapsible" type="button" aria-expanded="true">
-          <span><i class="fa-solid fa-plug"></i> Importations & intégrations</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+          <div class="sidebar-header">Importations & intégrations</div>
         </button>
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" data-nav="import">
+          <a href="#" class="sidebar-item" id="nav-import" data-nav="import">
             <span class="sidebar-icon"><i class="fa-solid fa-file-import"></i></span> Import Excel / CSV
           </a>
-          <a href="#" class="sidebar-item" data-nav="connectors">
+          <a href="#" class="sidebar-item" id="nav-connectors" data-nav="connectors">
             <span class="sidebar-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span> Connecteurs & API
           </a>
         </div>
@@ -196,21 +174,19 @@
 
       <!-- Paramètres de l’établissement -->
       <div class="sidebar-section">
-        <button class="sidebar-header collapsible" type="button" aria-expanded="true">
-          <span><i class="fa-solid fa-gear"></i> Paramètres de l’établissement</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        </button>
+          <div class="sidebar-header">Paramètres de l’établissement</div>
+
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" data-nav="school-profile">
+          <a href="#" class="sidebar-item" id="nav-school-profile" data-nav="school-profile">
             <span class="sidebar-icon"><i class="fa-solid fa-school"></i></span> Profil de l’école
           </a>
-          <a href="#" class="sidebar-item" data-nav="school-year">
+          <a href="#" class="sidebar-item" id="nav-school-year" data-nav="school-year">
             <span class="sidebar-icon"><i class="fa-regular fa-calendar"></i></span> Année scolaire
           </a>
-          <a href="#" class="sidebar-item" data-nav="branding">
+          <a href="#" class="sidebar-item" id="nav-branding" data-nav="branding">
             <span class="sidebar-icon"><i class="fa-regular fa-image"></i></span> Identité visuelle
           </a>
-          <a href="#" class="sidebar-item" data-nav="platform-settings">
+          <a href="#" class="sidebar-item" id="nav-platform-settings" data-nav="platform-settings">
             <span class="sidebar-icon"><i class="fa-solid fa-sliders"></i></span> Paramètres de la plateforme
           </a>
         </div>
@@ -218,129 +194,251 @@
 
       <!-- Aide & support -->
       <div class="sidebar-section">
-        <button class="sidebar-header collapsible" type="button" aria-expanded="false">
-          <span><i class="fa-solid fa-circle-info"></i> Aide & support</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        </button>
+          <div class="sidebar-header"> Aide & support</div>
+
         <div class="sidebar-group" hidden>
-          <a href="#" class="sidebar-item" data-nav="help-center">
+          <a href="#" class="sidebar-item" id="nav-help-center" data-nav="help-center">
             <span class="sidebar-icon"><i class="fa-regular fa-circle-question"></i></span> Centre d’aide
           </a>
-          <a href="#" class="sidebar-item" data-nav="support">
+          <a href="#" class="sidebar-item" id="nav-support" data-nav="support">
             <span class="sidebar-icon"><i class="fa-solid fa-headset"></i></span> Support / Contact
           </a>
         </div>
       </div>
     </nav>
 
-    
     <!-- Zone centrale -->
     <div class="centered-content">
       <div class="content-container">
 
-        <!-- Accueil -->
-      <section class="content-section" id="home" style="display:block;">
-        <div class="dash-head">
-          <h2 class="dash-title">Tableau de bord</h2>
-          <div class="dash-overview">Overview</div>
-        </div>
+        <!-- Accueil (par défaut visible) -->
+        <section class="content-section active" id="home">
+          <div class="dash-head">
+            <h2 class="dash-title">Tableau de bord</h2>
+            <div class="dash-overview">Overview</div>
+          </div>
 
-        <!-- KPI STRIP -->
-        <div class="kpi-grid">
-          <div class="kpi-card kpi-gradient-1">
-            <div class="kpi-top">
-              <span class="kpi-title">Élèves</span>
-              <i class="fa-solid fa-user-graduate"></i>
+          <!-- KPI STRIP -->
+          <div class="kpi-grid">
+            <div class="kpi-card kpi-gradient-1">
+              <div class="kpi-top">
+                <span class="kpi-title">Élèves</span>
+                <i class="fa-solid fa-user-graduate"></i>
+              </div>
+              <div class="kpi-value" id="kpi-students">...</div>
+              <div class="kpi-trend up">Augmenté de 3%</div>
             </div>
-            <div class="kpi-value" id="kpi-students">...</div>
-            <div class="kpi-trend up">Augmenté de 3%</div>
-          </div>
 
-          <div class="kpi-card kpi-gradient-2">
-            <div class="kpi-top">
-              <span class="kpi-title">Présence aujourd’hui</span>
-              <i class="fa-solid fa-user-check"></i>
+            <div class="kpi-card kpi-gradient-2">
+              <div class="kpi-top">
+                <span class="kpi-title">Présence aujourd’hui</span>
+                <i class="fa-solid fa-user-check"></i>
+              </div>
+              <div class="kpi-value" id="kpi-attendance">95%</div>
+              <div class="kpi-trend down">Diminué de 1%</div>
             </div>
-            <div class="kpi-value" id="kpi-attendance">95%</div>
-            <div class="kpi-trend down">Diminué de 1%</div>
-          </div>
 
-          <div class="kpi-card kpi-gradient-3">
-            <div class="kpi-top">
-              <span class="kpi-title">Examens à venir</span>
-              <i class="fa-solid fa-file-pen"></i>
+            <div class="kpi-card kpi-gradient-3">
+              <div class="kpi-top">
+                <span class="kpi-title">Examens à venir</span>
+                <i class="fa-solid fa-file-pen"></i>
+              </div>
+              <div class="kpi-value" id="kpi-exams">...</div>
+              <div class="kpi-trend up">+1 ajouté</div>
             </div>
-            <div class="kpi-value" id="kpi-exams">...</div>
-            <div class="kpi-trend up">+1 ajouté</div>
-          </div>
 
-          <div class="kpi-card kpi-gradient-4">
-            <div class="kpi-top">
-              <span class="kpi-title">Réunions</span>
-              <i class="fa-solid fa-handshake"></i>
+            <div class="kpi-card kpi-gradient-4">
+              <div class="kpi-top">
+                <span class="kpi-title">Réunions</span>
+                <i class="fa-solid fa-handshake"></i>
+              </div>
+              <div class="kpi-value" id="kpi-meetings">2</div>
+              <div class="kpi-trend up">+1 cette semaine</div>
             </div>
-            <div class="kpi-value" id="kpi-meetings">2</div>
-            <div class="kpi-trend up">+1 cette semaine</div>
           </div>
-        </div>
 
-        <!-- CHARTS ROW -->
-        <div class="charts-grid">
-          <div class="card chart-card">
-            <div class="card-head"><h3>Visit & Sales Statistics</h3></div>
-            <canvas id="barStats" height="140"></canvas>
+          <!-- CHARTS ROW -->
+          <div class="charts-grid">
+            <div class="card chart-card">
+              <div class="card-head"><h3>Visit & Sales Statistics</h3></div>
+              <canvas id="barStats" height="140"></canvas>
+            </div>
+            <div class="card chart-card">
+              <div class="card-head"><h3>Traffic Sources</h3></div>
+              <canvas id="doughnutTraffic" height="140"></canvas>
+            </div>
           </div>
-          <div class="card chart-card">
-            <div class="card-head"><h3>Traffic Sources</h3></div>
-            <canvas id="doughnutTraffic" height="140"></canvas>
-          </div>
-        </div>
-      </section>
-        <!-- Administration -->
-        <section class="content-section" id="admin" style="display:none;">
+        </section>
+
+        <!-- Sections contrôlées par navbar.js (plus d'inline styles) -->
+        <section class="content-section" id="admin">
           <h2>Administration</h2>
           <p>This is the Administration section part.</p>
         </section>
 
-        <!-- Rôles & permissions -->
-        <section class="content-section" id="roles" style="display:none;">
+        <section class="content-section" id="roles">
           <h2>Rôles & permissions</h2>
           <p>This is the Roles & Permissions section part.</p>
         </section>
 
-        <!-- Enseignants -->
-        <section class="content-section" id="teachers" style="display:none;">
+        <section class="content-section" id="teachers">
           <h2>Enseignants</h2>
           <p>This is the Teachers section part.</p>
         </section>
 
-        <!-- Élèves -->
-        <section class="content-section" id="students" style="display:none;">
+        <section class="content-section" id="students">
           <h2>Élèves</h2>
           <p>This is the Students section part.</p>
         </section>
 
-        <!-- Parents -->
-        <section class="content-section" id="guardians" style="display:none;">
+        <section class="content-section" id="guardians">
           <h2>Parents / Tuteurs</h2>
           <p>This is the Guardians section part.</p>
         </section>
 
-        <!-- Matiere / Programme -->
-        <section class="content-section" id="matiere" style="display:none;">
-            <h2>Matiere / Programmes</h2>
-            <ul id="matiere-list"></ul>
+        <section class="content-section" id="matiere">
+          <h2>Matière / Programmes</h2>
+          <ul id="matiere-list"></ul>
         </section>
 
+        <section class="content-section" id="classes">
+          <h2>Classes & groupes</h2>
+          <p>Gestion des classes.</p>
+        </section>
+
+        <section class="content-section" id="lessons">
+          <h2>Cours & leçons</h2>
+          <p>Gestion des cours & leçons.</p>
+        </section>
+
+        <section class="content-section" id="assignments">
+          <h2>Devoirs & évaluations</h2>
+          <p>Gestion des devoirs.</p>
+        </section>
+
+        <section class="content-section" id="attendance">
+          <h2>Présences</h2>
+          <p>Suivi des présences.</p>
+        </section>
+
+        <section class="content-section" id="lateness">
+          <h2>Retards & absences</h2>
+          <p>Suivi des retards & absences.</p>
+        </section>
+
+        <section class="content-section" id="discipline">
+          <h2>Incidents disciplinaires</h2>
+          <p>Suivi disciplinaire.</p>
+        </section>
+
+        <section class="content-section" id="library">
+          <h2>Bibliothèque</h2>
+          <p>Contenu et ressources.</p>
+        </section>
+
+        <section class="content-section" id="shared">
+          <h2>Ressources partagées</h2>
+          <p>Partage interne.</p>
+        </section>
+
+        <section class="content-section" id="school-docs">
+          <h2>Documents scolaires</h2>
+          <p>Docs de l’établissement.</p>
+        </section>
+
+        <section class="content-section" id="announcements">
+          <h2>Annonces</h2>
+          <p>Communiqués officiels.</p>
+        </section>
+
+        <section class="content-section" id="messaging">
+          <h2>Messagerie</h2>
+          <p>Messages internes.</p>
+        </section>
+
+        <section class="content-section" id="channels">
+          <h2>Canaux externes</h2>
+          <p>Email/SMS/WhatsApp.</p>
+        </section>
+
+        <section class="content-section" id="calendar">
+          <h2>Calendrier</h2>
+          <p>Événements & agenda.</p>
+        </section>
+
+        <section class="content-section" id="student-progress">
+          <h2>Progression des élèves</h2>
+          <p>Rapports de progression.</p>
+        </section>
+
+        <section class="content-section" id="teacher-activity">
+          <h2>Activité des enseignants</h2>
+          <p>Suivi de l’activité.</p>
+        </section>
+
+        <section class="content-section" id="attendance-reports">
+          <h2>Rapports de présence</h2>
+          <p>Tableaux & graphiques.</p>
+        </section>
+
+        <section class="content-section" id="exam-reports">
+          <h2>Rapports d’examens</h2>
+          <p>Analyses des examens.</p>
+        </section>
+
+        <section class="content-section" id="dashboards">
+          <h2>Tableaux de bord</h2>
+          <p>KPIs et synthèses.</p>
+        </section>
+
+        <section class="content-section" id="import">
+          <h2>Import Excel / CSV</h2>
+          <p>Importer des données.</p>
+        </section>
+
+        <section class="content-section" id="connectors">
+          <h2>Connecteurs & API</h2>
+          <p>Intégrations.</p>
+        </section>
+
+        <section class="content-section" id="school-profile">
+          <h2>Profil de l’école</h2>
+          <p>Identité de l’établissement.</p>
+        </section>
+
+        <section class="content-section" id="school-year">
+          <h2>Année scolaire</h2>
+          <p>Paramétrage des périodes.</p>
+        </section>
+
+        <section class="content-section" id="branding">
+          <h2>Identité visuelle</h2>
+          <p>Logos & couleurs.</p>
+        </section>
+
+        <section class="content-section" id="platform-settings">
+          <h2>Paramètres de la plateforme</h2>
+          <p>Configuration technique.</p>
+        </section>
+
+        <section class="content-section" id="help-center">
+          <h2>Centre d’aide</h2>
+          <p>FAQ & guides.</p>
+        </section>
+
+        <section class="content-section" id="support">
+          <h2>Support</h2>
+          <p>Assistance & contact.</p>
+        </section>
 
       </div>
     </div>
-    
-    <!-- Barre latérale droite (facultative) -->
+
+    <!-- Barre latérale droite (inchangée, optionnelle) -->
     <aside class="right-sidebar" aria-label="Informations complémentaires">
       <div class="widget">
         <div class="widget-content">
-          <div id="calendar"></div>
+          <div id="calendar-mini"></div>
         </div>
       </div>
       <br>
@@ -353,68 +451,21 @@
         </div>
       </div>
       <script>
-        // Simple real-time calendar (month view)
-        function renderCalendar() {
-          const calendarEl = document.getElementById('calendar');
+        // Mini calendrier décoratif
+        (function () {
+          const el = document.getElementById('calendar-mini');
+          if (!el) return;
           const now = new Date();
-          const month = now.getMonth();
-          const year = now.getFullYear();
-
-          // Get month name in French
-          const monthNames = [
-            "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-            "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
-          ];
-          const daysShort = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
-          // First day of month
-          const firstDay = new Date(year, month, 1);
-          // Last day of month
-          const lastDay = new Date(year, month + 1, 0);
-
-          let html = `<div class="calendar-header"><strong>${monthNames[month]} ${year}</strong></div>`;
-          html += `<table class="calendar-table"><thead><tr>`;
-          daysShort.forEach(day => html += `<th>${day}</th>`);
-          html += `</tr></thead><tbody><tr>`;
-
-          // Fill empty cells before first day
-          let startDay = firstDay.getDay(); // Sunday=0
-          startDay = startDay === 0 ? 6 : startDay - 1; // Make Monday=0
-          for (let i = 0; i < startDay; i++) html += `<td></td>`;
-
-          // Fill days
-          for (let d = 1; d <= lastDay.getDate(); d++) {
-            const today = (d === now.getDate());
-            html += `<td${today ? ' class="calendar-today"' : ''}>${d}</td>`;
-            if ((startDay + d) % 7 === 0 && d !== lastDay.getDate()) html += `</tr><tr>`;
-          }
-
-          // Fill empty cells after last day
-          let endDay = (startDay + lastDay.getDate()) % 7;
-          if (endDay !== 0) for (let i = endDay; i < 7; i++) html += `<td></td>`;
-          html += `</tr></tbody></table>`;
-
-          calendarEl.innerHTML = html;
-        }
-
-        // Basic styles for calendar
-        const style = document.createElement('style');
-        style.textContent = `
-          .calendar-header { text-align:center; margin-bottom:8px; }
-          .calendar-table { width:100%; border-collapse:collapse; font-size:0.95em; }
-          .calendar-table th, .calendar-table td { border:1px solid #eee; width:14%; height:28px; text-align:center; }
-          .calendar-today { background:#0078d4; color:#fff; border-radius:50%; }
-        `;
-        document.head.appendChild(style);
-
-        renderCalendar();
+          const month = now.toLocaleString('fr-FR', { month: 'long' });
+          el.innerHTML = '<div class="calendar-header"><strong>' + month.charAt(0).toUpperCase() + month.slice(1) + ' ' + now.getFullYear() + '</strong></div>';
+        })();
       </script>
     </aside>
+  </div>
 
-  <!-- Optional separate scripts -->
+  <!-- Scripts existants -->
   <script src="../js/navbar.js"></script>
   <script src="../js/matiere.js"></script>
   <script src="../js/kpi.js"></script>
-
 </body>
 </html>
