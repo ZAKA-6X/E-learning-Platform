@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClicaEd - Tableau de bord Enseignant</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/post.css" />
+    <link rel="icon" type="image/png" href="../assets/icon.png" />
+    <!-- Font Awesome 6 -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <!-- Header -->
+    <header class="header" id="header">
+      <div class="logo">ClicaEd</div>
+
+      <div class="search-bar">
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Rechercher un cours…"
+          aria-label="Rechercher un cours"
+        />
+      </div>
+
+      <div class="user-menu">
+        <div class="user-avatar">U</div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container" id="main-container">
+      <!-- Left Sidebar -->
+      <nav class="left-sidebar" id="left-sidebar">
+        <a href="#" class="sidebar-item" id="nav-accueil" title="Accueil">
+          <span class="sidebar-icon"><i class="fa-solid fa-house"></i></span>
+          Accueil
+        </a>
+
+        <div class="sidebar-section">
+          <div class="sidebar-header">Gestion des cours</div>
+          <a href="#" class="sidebar-item active" id="nav-cours" title="Mes cours">
+            <span class="sidebar-icon"><i class="fa-solid fa-book"></i></span>
+            Mes Cours
+          </a>
+        </div>
+      </nav>
+
+      <!-- Centered Content Wrapper -->
+      <div class="centered-content" id="centered-content">
+        <div class="content-container" id="content-container">
+          <main class="content-area" id="content-area">
+
+            <!-- Accueil -->
+            <section id="accueil" class="content-section">
+              <h2>🏠 Accueil</h2>
+              <p>Bienvenue sur votre tableau de bord enseignant.</p>
+              <p>Utilisez le menu pour gérer vos cours.</p>
+            </section>
+
+            <!-- Mes Cours (Reddit-inspired) -->
+            <section id="cours" class="content-section active">
+              <header class="courses-header">
+                <div class="left">
+                  <h2>📘 Mes Cours</h2>
+                  <div class="meta muted" id="courses-count">—</div>
+                </div>
+
+                <div class="right actions-wrap">
+                  <div class="search-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input id="course-search" type="search" placeholder="Rechercher un cours…" autocomplete="off" />
+                  </div>
+
+                  <div class="segmented small" role="tablist" aria-label="Filtre statut">
+                    <button class="segmented-item active" data-filter="all" aria-selected="true">Tous</button>
+                    <button class="segmented-item" data-filter="published" aria-selected="false">Publiés</button>
+                    <button class="segmented-item" data-filter="draft" aria-selected="false">Brouillons</button>
+                  </div>
+
+                  <div class="select-wrap">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <select id="course-sort">
+                      <option value="updated_desc">Tri: Modifié ↓</option>
+                      <option value="updated_asc">Tri: Modifié ↑</option>
+                      <option value="title_asc">Titre A–Z</option>
+                      <option value="title_desc">Titre Z–A</option>
+                      <option value="students_desc">Élèves ↓</option>
+                      <option value="students_asc">Élèves ↑</option>
+                    </select>
+                  </div>
+
+                  <div class="view-toggle" title="Vue">
+                    <button class="view-btn active" data-view="grid"><i class="fa-solid fa-grip"></i></button>
+                    <button class="view-btn" data-view="list"><i class="fa-solid fa-list"></i></button>
+                  </div>
+
+                  <button class="action-button" id="btn-new-course">
+                    <i class="fa-solid fa-plus"></i> Nouveau cours
+                  </button>
+                </div>
+              </header>
+
+              <div id="courses-container" class="course-grid">
+                <!-- Skeletons (loading state) -->
+                <div class="course-card skeleton"></div>
+                <div class="course-card skeleton"></div>
+                <div class="course-card skeleton"></div>
+                <div class="course-card skeleton"></div>
+              </div>
+
+              <div id="courses-empty" class="empty-state hidden">
+                <div class="empty-illustration">📭</div>
+                <h3>Aucun cours</h3>
+                <p class="muted">Créez votre premier cours pour commencer.</p>
+                <button class="action-button" id="btn-empty-new">Créer un cours</button>
+              </div>
+
+              <!-- Dialog: Create / Edit Course -->
+              <dialog id="course-dialog" class="course-dialog">
+                <form id="course-form" method="dialog" class="course-form" autocomplete="off">
+                  <div class="dialog-header">
+                    <h3 id="course-dialog-title">Nouveau cours</h3>
+                    <button type="button" class="icon-btn" id="dlg-close" title="Fermer">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+
+                  <div class="form-grid">
+                    <label class="field">
+                      <span>Titre du cours *</span>
+                      <input type="text" id="cf-title" name="title" placeholder="ex: Mathématiques - 2A" required />
+                    </label>
+
+                    <label class="field">
+                      <span>Matière *</span>
+                      <select id="cf-subject" name="subject_id" required>
+                        <option value="">— Choisir —</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Classe *</span>
+                      <select id="cf-class" name="class_id" required>
+                        <option value="">— Choisir —</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Statut</span>
+                      <select id="cf-status" name="status">
+                        <option value="draft">Brouillon</option>
+                        <option value="published">Publié</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="dialog-actions">
+                    <button type="button" class="btn-secondary" id="dlg-cancel">Annuler</button>
+                    <button type="submit" class="btn-primary" id="dlg-save">
+                      <i class="fa-solid fa-floppy-disk"></i> Enregistrer
+                    </button>
+                  </div>
+                </form>
+              </dialog>
+            </section>
+
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <!-- JS -->
+    <script src="../js/navbar.js"></script>
+    <script src="../js/courses.js" defer></script>
+  </body>
+</html>

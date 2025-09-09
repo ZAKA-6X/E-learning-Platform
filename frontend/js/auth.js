@@ -1,41 +1,44 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector("form");
+// frontend/js/auth.js
+(function () {
+  const form = document.getElementById("login-form");
+  const emailEl = document.getElementById("email");
+  const passEl = document.getElementById("password");
+  const errorEl = document.getElementById("login-error");
+
+  if (!form) return;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (errorEl) errorEl.textContent = "";
 
-    const email = e.target.email.value;
-    const password = e.target.password.value;
+    const email = emailEl.value.trim();
+    const password = passEl.value;
 
     try {
-      const res = await fetch("/login", {
+      const resp = await fetch("/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const data = await resp.json();
 
-      if (res.ok) {
-        // ✅ Save token & user data
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-
-        // ✅ Redirect based on role
-        if (data.user.role === "admin") {
-          window.location.href = "../pages/admin-dashboard.html";
-        } else if (data.user.role === "teacher") {
-          window.location.href = "../pages/teacher-dashboard.html";
-        } else if (data.user.role === "student") {
-          window.location.href = "../pages/student-dashboard.html";
-        } else {
-          alert("Unknown role");
-        }
-      } else {
-        alert(data.message || "Login failed");
+      if (!resp.ok) {
+        const msg = data?.message || data?.error || "Échec de connexion.";
+        if (errorEl) errorEl.textContent = msg;
+        else alert(msg);
+        return;
       }
-    } catch (error) {
-      console.error("Login error:", error);
+
+      // Save JWT so other pages can send Authorization: Bearer
+      localStorage.setItem("token", data.token);
+
+      // Redirect to teacher dashboard (adjust if needed)
+      window.location.href = "/pages/teacher-dashboard.html";
+    } catch (err) {
+      console.error("[login]", err);
+      if (errorEl) errorEl.textContent = "Erreur réseau.";
+      else alert("Erreur réseau.");
     }
   });
-});
+})();
