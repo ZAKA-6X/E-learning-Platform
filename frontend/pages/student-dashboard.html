@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ClicaEd - Tableau de bord</title>
     <link rel="stylesheet" href="../css/main.css" />
-    <link rel="stylesheet" href="../css/post.css" />
+    <link rel="stylesheet" href="../css/posts.css" />
 
     <link rel="icon" type="image/png" href="../assets/icon.png" />
     <!-- Font Awesome 6 -->
@@ -189,30 +189,30 @@
             Rappels
           </a>
         </div>
-        <div class="sidebar-section" id="sec-outils" name="outils">
-          <div class="sidebar-header">Outils</div>
+        <div class="sidebar-section" id="sec-support-outils" name="support-outils">
+        <div class="sidebar-header">Outils</div>
 
-          <a
-            href="#"
-            class="sidebar-item"
-            id="nav-contact"
-            name="contact"
-            title="Contact"
-          >
-            <span class="sidebar-icon"><i class="fa-solid fa-phone"></i></span>
-            Contact
-          </a>
-          <a
-            href="#"
-            class="sidebar-item"
-            id="nav-aide"
-            name="aide"
-            title="Aide"
-          >
-            <span class="sidebar-icon"><i class="fa-solid fa-circle-question"></i></span>
-            Aide
-          </a>
-        </div>
+        <a
+          href="#"
+          class="sidebar-item"
+          id="nav-contact"
+          name="contact"
+          title="Contact"
+        >
+          <span class="sidebar-icon"><i class="fa-solid fa-phone"></i></span>
+          Contact
+        </a>
+        <a
+          href="#"
+          class="sidebar-item"
+          id="nav-aide"
+          name="aide"
+          title="Aide"
+        >
+          <span class="sidebar-icon"><i class="fa-solid fa-circle-question"></i></span>
+          Aide
+        </a>
+      </div>
       </nav>
 
       <!-- Centered Content Wrapper -->
@@ -269,20 +269,22 @@
           </section>
 
           <section id="publications" class="content-section" data-section="publications">
-            <h2>🖼 Publications</h2>
-            <!-- Reusable Post Composer (loaded dynamically on "Créer") -->
-            <div
-              id="post-composer-host"
-              data-component="post-composer"
-              data-audience="school"
-              data-role="student"
-              data-ready="false"
-            ></div>
-            <!-- Where new posts will appear (optimistic render) -->
-            <div id="feed" class="card" style="margin-top:14px;">
-              <div class="muted">Rien a affiche....</div>
-            </div>
-          </section>
+              <h2>🖼 Publications</h2>
+
+              <!-- Single Post Composer host (kept) -->
+              <div
+                id="post-composer-host"
+                data-component="post-composer"
+                data-src="../pages/student-post.html"
+                data-selector="form.post-card"
+                data-ready="false">
+              </div>
+
+              <!-- Feed -->
+              <div id="feed" class="card" style="margin-top:14px;">
+                <div class="muted">Rien a affiche....</div>
+              </div>
+            </section>
 
           <section id="taches" class="content-section">
             <h2>✅ Liste des tâches</h2>
@@ -326,7 +328,7 @@
     <script src="../js/navbar.js" id="navbar-js" name="navbar-js"></script>
     <script src="../js/student-app.js"></script>
     <script src="../js/todolist.js"></script>
-    <script src="../js/post.js"></script>
+    <script src="../js/posts.js"></script>
 
   </body>
 </html>

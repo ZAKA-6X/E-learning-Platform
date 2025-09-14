@@ -15,7 +15,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 app.use('/', require('./routes/authRoutes'));
-app.use('/', require('./routes/fileRoutes'));
 app.use('/admin', require('./routes/adminRoutes'));
 app.use('/todos', require('./routes/todosRoutes'));
 app.use('/subjects', subjectsRoutes);

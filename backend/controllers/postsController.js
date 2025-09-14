@@ -1,90 +1,83 @@
 // controllers/postsController.js
-// Uses Supabase client exported from ../config/db
-// Your ../config/db should export either `module.exports = supabase`
-// or `module.exports = { supabase }`
+const supabase = require("../config/db");
 
-const supa = require("../config/db");
-const supabase = supa.supabase || supa; // supports either export style
+/** Map friendly labels or raw values to the DB enum */
+function normalizeAudience(value) {
+  if (!value) return "school";
+  const v = String(value).toLowerCase().trim();
+  if (v === "all_classes" || v.includes("toute")) return "all_classes";
+  if (v === "class" || v.includes("ma classe")) return "class";
+  return "school";
+}
 
+/** Create Post + (optional) PDF attachments */
 exports.addPost = async (req, res) => {
   try {
-    const userSchoolId = req.user?.school_id || null;
-
-    const {
-      type = null,
-      title = null,
-      body: content = null,
-      media = null,
-
-      audience_school,
-      audience_class,
-      audience_subject,
-
-      class_id,
-      subject_id,
-      school_id: schoolIdFromBody
-    } = req.body || {};
-
-    const flag = (v) =>
-      v === true || v === "true" || v === "on" || v === 1 || v === "1";
-
-    const wantsSchool = flag(audience_school);
-    const wantsClass = flag(audience_class);
-    const wantsSubject = flag(audience_subject);
-
-    const selectedCount = [wantsSchool, wantsClass, wantsSubject].filter(Boolean).length;
-    if (selectedCount > 1) {
-      return res.status(400).json({
-        error: "Select only one audience: school OR class OR subject."
-      });
+    const userId = req.user?.id;
+    const schoolId = req.user?.school_id;
+    if (!userId || !schoolId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const school_id = userSchoolId || schoolIdFromBody || null;
-    if (!school_id) {
-      return res.status(400).json({ error: "Missing school_id (token or body)." });
+    const { title, body_html, audience } = req.body || {};
+    if (!title || typeof title !== "string" || !title.trim()) {
+      return res.status(400).json({ error: "title is required" });
     }
+    const audienceEnum = normalizeAudience(audience);
 
-    let audience_scope = null;
-    if (wantsSchool) {
-      audience_scope = school_id;
-    } else if (wantsClass) {
-      if (!class_id) {
-        return res.status(400).json({ error: "class_id is required when class audience is selected." });
+    // Resolve class_id from users when targeting 'class' audience
+    let classId = null;
+    if (audienceEnum === "class") {
+      const { data: userRow, error: userError } = await supabase
+        .from("users")
+        .select("class_id")
+        .eq("id", userId)
+        .single();
+
+      if (userError) {
+        console.error(
+          "[postsController.addPost] class lookup error",
+          userError
+        );
+        return res
+          .status(500)
+          .json({ error: userError.message || "Cannot resolve class" });
       }
-      audience_scope = class_id;
-    } else if (wantsSubject) {
-      if (!subject_id) {
-        return res.status(400).json({ error: "subject_id is required when subject audience is selected." });
+      classId = userRow?.class_id || null;
+      if (!classId) {
+        return res.status(400).json({ error: "User has no class assigned" });
       }
-      audience_scope = subject_id;
-    } else {
-      // No selection => treat as school-wide (use null if you prefer)
-      audience_scope = school_id;
     }
 
-    const { data, error } = await supabase
+    // 1) Insert the post first
+    const insertPayload = {
+      school_id: schoolId,
+      user_id: userId,
+      title,
+      body_html: body_html || null,
+      audience: audienceEnum,
+      class_id: classId,
+      status: "published",
+    };
+
+    const { data: post, error: postError } = await supabase
       .from("posts")
-      .insert([
-        {
-          school_id,
-          type,
-          title,
-          body: content,
-          media,
-          audience_scope
-        }
-      ])
+      .insert(insertPayload)
       .select("*")
       .single();
 
-    if (error) {
-      console.error("Supabase insert error:", error);
-      return res.status(500).json({ error: error.message || "Insert failed" });
+    if (postError) {
+      console.error("[postsController.addPost] insert post error", postError);
+      return res
+        .status(400)
+        .json({ error: postError.message || "Insert failed" });
     }
 
-    return res.status(201).json({ post: data });
+    // Success: attachments removed in rollback
+    return res.status(201).json(post);
+
   } catch (err) {
-    console.error("Error inserting post:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("[postsController.addPost] exception", err);
+    return res.status(500).json({ error: err?.message || "Server error" });
   }
 };

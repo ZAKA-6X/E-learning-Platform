@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Dashboard - Create Post</title>
+    <link rel="stylesheet" href="../css/posts.css" />
+  </head>
+  <body>
+    <div id="post-composer-host" class="post-wrap">
+      <form class="post-card" id="post-form" method="post" action="/api/posts" enctype="multipart/form-data">
+        <div class="post-body">
+          <!-- Header -->
+          <h1>Créer une publication</h1>
+
+          <!-- Audience Select -->
+          <div class="post-field">
+            <label for="post-audience" class="post-label">Audience</label>
+            <select id="post-audience" required>
+              <option value="Mon école">Mon école</option>
+              <option value="Toute la classe">Toute la classe</option>
+              <option value="Ma classe">Ma classe</option>
+            </select>
+          </div>
+
+          <!-- Title -->
+          <div class="post-field">
+            <label for="post-title" class="post-label">Titre</label>
+            <input
+              id="post-title"
+              type="text"
+              maxlength="150"
+              placeholder="Votre titre…"
+              required
+              class="post-title"
+            />
+          </div>
+
+          <!-- Media -->
+          <div class="post-field">
+            <label for="post-media" class="post-label">Média</label>
+            <div class="post-media">
+              <label for="post-media">Cliquez ou glissez un fichier ici</label>
+              <input id="post-media" name="media" type="file" accept="application/pdf" multiple />
+            </div>
+          </div>
+
+          <!-- Body (Rich Text Editor) -->
+          <div class="post-field">
+            <label class="post-label">Contenu</label>
+            <div class="editor">
+              <div class="editor-toolbar">
+                <button type="button" class="tool-btn" data-cmd="bold">
+                  <img
+                    src="https://cdn.jsdelivr.net/npm/lucide-static/icons/bold.svg"
+                    alt="Bold"
+                    class="tool-icon"
+                  />
+                </button>
+                <button type="button" class="tool-btn" data-cmd="italic">
+                  <img
+                    src="https://cdn.jsdelivr.net/npm/lucide-static/icons/italic.svg"
+                    alt="Italic"
+                    class="tool-icon"
+                  />
+                </button>
+                <button type="button" class="tool-btn" data-cmd="underline">
+                  <img
+                    src="https://cdn.jsdelivr.net/npm/lucide-static/icons/underline.svg"
+                    alt="underline"
+                    class="tool-icon"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="tool-btn"
+                  data-cmd="insertOrderedList"
+                >
+                  <img
+                    src="https://cdn.jsdelivr.net/npm/lucide-static/icons/list-ordered.svg"
+                    alt="Ordered List"
+                    class="tool-icon"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="tool-btn"
+                  data-cmd="insertUnorderedList"
+                >
+                  <img
+                    src="https://cdn.jsdelivr.net/npm/lucide-static/icons/list.svg"
+                    alt="Unordered List"
+                    class="tool-icon"
+                  />
+                </button>
+                <!-- Separator -->
+                <div class="toolbar-separator"></div>
+                <button type="button" class="tool-btn" data-cmd="createLink">
+                  <img
+                    src="https://cdn.jsdelivr.net/npm/lucide-static/icons/link.svg"
+                    alt="Link"
+                    class="tool-icon"
+                  />
+                </button>
+                <button type="button" class="tool-btn" data-cmd="insertImage">
+                  <img
+                    src="https://cdn.jsdelivr.net/npm/lucide-static/icons/image.svg"
+                    alt="Image"
+                    class="tool-icon"
+                  />
+                </button>
+              </div>
+            </div>
+            <div
+              id="post-body"
+              class="editor-area"
+              contenteditable="true"
+              data-placeholder="Exprimez-vous…"
+            ></div>
+          </div>
+
+          <!-- Footer -->
+          <div class="post-footer">
+            <button type="button" class="btn btn-ghost" id="cancel-btn">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+              Publier
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <script src="../js/posts.js"></script>
+  </body>
+</html>

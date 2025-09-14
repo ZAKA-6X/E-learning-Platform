@@ -1,0 +1,559 @@
+/* ===== ClicaEd — Create Post (themed) =====
+   Uses tokens from main.css: --card, --line, --ink, --muted, --primary, --primary-ink, --accent, --shadow
+   Requires: ./css/main.css
+*/
+
+/* Card shell for the composer */
+.post-wrap {
+  margin-top: 8px;
+}
+.post-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* Header / Tabs */
+.post-head {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 14px 0;
+}
+.post-tabs {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.post-tab {
+  position: relative;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 10px 2px;
+  cursor: pointer;
+}
+.post-tab i {
+  margin-right: 8px;
+  font-size: 14px;
+}
+.post-tab[aria-selected="true"] {
+  color: var(--ink);
+}
+.post-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Body */
+.post-body {
+  padding: 16px;
+}
+
+/* Field header + counter / hint */
+.post-field + .post-field {
+  margin-top: 14px;
+}
+.post-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 2px 2px 6px;
+}
+.char-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Title input */
+.post-title {
+  width: 100%;
+  height: 46px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.post-title::placeholder {
+  color: var(--muted);
+}
+.post-title:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+.post-title[aria-invalid="true"] {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 3px rgba(224, 67, 67, 0.12);
+}
+.error-hint {
+  display: none;
+  margin: 6px 4px 0;
+  color: var(--bad);
+  font-size: 12px;
+}
+.error-hint.show {
+  display: block;
+}
+
+/* Tags row */
+.tags-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px dashed var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.tag-input {
+  border: none;
+  outline: none;
+  min-width: 200px;
+  height: 30px;
+  padding: 0 6px;
+  color: var(--ink);
+}
+.tag-input::placeholder {
+  color: var(--muted);
+}
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  background: #f6f6ff;
+  color: var(--primary-ink);
+  border: 1px solid #e6e8ff;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px #eef0ff;
+}
+
+/* Editor */
+.editor {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  background: #fafafe;
+}
+.tool-btn {
+  background: var(--primary);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.tool-btn:hover {
+  background: var(--primary-ink);
+  transform: translateY(-2px);
+}
+.tool-btn:active {
+  background: var(--primary);
+  transform: translateY(0);
+}
+.tool-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent);
+}
+.tool-btn i {
+  font-size: 16px;
+  color: #fff;
+}
+.editor-area {
+  min-height: 140px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.editor-area:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+.editor-area:empty:before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
+/* Footer buttons */
+.post-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  color: #fff; /* White text */
+  background-color: #4a90e2; /* Primary button color */
+  border: none;
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+.btn:hover {
+  background-color: #357ab8; /* Darker shade on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Hover shadow */
+}
+.btn:active {
+  background-color: #2a5f8a; /* Even darker shade on click */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Active shadow */
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(106, 90, 205, 0.22);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+  background: var(--primary-ink);
+}
+.btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent);
+}
+.btn-ghost {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+.btn-ghost:hover {
+  border-color: #e0e2ef;
+  transform: translateY(-1px);
+}
+
+/* Refined styles for select input */
+.post-field select {
+  width: 100%;
+  height: 46px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: var(--ink);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.post-field select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+.post-field select option {
+  color: var(--ink);
+  background: #fff;
+}
+
+/* Updated styles for PDF upload area to keep the space but remove the browser button */
+.post-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 120px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  text-align: center;
+}
+
+.post-media:hover {
+  border-color: var(--primary);
+  background: var(--primary-ink);
+  color: #fff;
+}
+
+.post-media input[type="file"] {
+  display: none; /* completely hide native input */
+}
+
+.post-media label {
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom upload area styles */
+.custom-upload-area {
+  display: inline-block;
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+  background-color: #f0f0f0; /* Light gray background */
+  color: #333; /* Dark text */
+  border: 2px dashed #4a90e2; /* Dashed border for upload area */
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.custom-upload-area.dragging {
+  background-color: #e0e0ff; /* Light blue background when dragging */
+}
+
+.custom-upload-area:hover {
+  background-color: #e0e0e0; /* Slightly darker gray on hover */
+}
+
+.custom-upload-area:active {
+  background-color: #d0d0d0; /* Even darker gray on click */
+}
+
+/* Page-level helpers */
+.dash-title {
+  font-size: 20px;
+}
+.dash-overview {
+  color: var(--muted);
+}
+
+/* Responsive tweaks */
+@media (max-width: 720px) {
+  .post-body {
+    padding: 12px;
+  }
+  .post-footer {
+    padding: 10px 12px;
+  }
+  .post-tabs {
+    gap: 12px;
+    overflow: auto;
+  }
+}
+
+/* Editor button styles */
+.editor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 5px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #4a90e2; /* Primary color */
+  background-color: #fff; /* White background */
+  border: 2px solid #4a90e2; /* Border matching primary color */
+  border-radius: 50%; /* Circular buttons */
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.editor-btn:hover {
+  background-color: #4a90e2; /* Primary color on hover */
+  color: #fff; /* White text on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Hover shadow */
+}
+
+.editor-btn:active {
+  background-color: #357ab8; /* Darker shade on click */
+  color: #fff; /* White text on click */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Active shadow */
+}
+
+.editor-btn img {
+  width: 20px;
+  height: 20px;
+}
+/* Toolbar Buttons */
+.tool-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.tool-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+}
+
+.tool-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Vertical separator line */
+.toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background: rgba(26, 19, 19, 0.2); /* subtle gray line */
+  margin: 0 6px;
+}
+
+/* === Image embed UX === */
+.editor-area .ce-image {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin: 8px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  outline: 2px solid transparent;
+  transition: outline-color 160ms ease;
+}
+.editor-area .ce-image.is-selected {
+  outline-color: var(--primary, #4f46e5);
+}
+.editor-area .ce-image > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  pointer-events: none; /* selection via wrapper */
+  user-select: none;
+}
+.editor-area .ce-image-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  font-size: 18px;
+  line-height: 1;
+  display: none;               /* shown only when selected */
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.editor-area .ce-image.is-selected > .ce-image-remove {
+  display: flex;
+}
+.editor-area .ce-image-remove:hover {
+  transform: scale(1.05);
+  background: rgba(220, 38, 38, 0.95); /* red-ish on hover */
+}
+
+/* === Post media (PDF) drop zone states === */
+.post-media {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 120px;
+  border: 2px dashed var(--line, rgba(255,255,255,0.1));
+  border-radius: 12px;
+  background: var(--card, #0f1117);
+  color: var(--muted, #9aa4b2);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s ease, background-color .2s ease, color .2s ease;
+}
+.post-media input[type="file"] {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer;
+}
+.post-media label { pointer-events: none; }
+
+.post-media:hover,
+.post-media.is-dragover {
+  border-color: var(--primary, #4f46e5);
+  background: var(--primary-ink, rgba(79,70,229,0.08));
+  color: #fff;
+}
+.post-media.has-file {
+  border-color: var(--primary, #4f46e5);
+  background: rgba(79,70,229,0.06);
+}
+
+/* === Inline status / errors === */
+.form-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted, #9aa4b2);
+}
+.form-hint.is-error {
+  color: #ef4444; /* red-500 */
+}
+
+/* === PDF chip === */
+.pdf-chip {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 10px; padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card, #0f1117);
+  border: 1px solid var(--line, rgba(255,255,255,0.08));
+}
+/* Multiple PDF chips list */
+.pdf-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdf-ico { font-size: 18px; }
+.pdf-info { display: flex; flex-direction: column; min-width: 0; }
+.pdf-name {
+  font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 320px;
+}
+.pdf-meta { font-size: 12px; color: var(--muted, #9aa4b2); }
+
+.pdf-actions { margin-left: auto; display: flex; gap: 8px; }
+.btn-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04); color: #fff; font-size: 12px;
+  cursor: pointer; text-decoration: none;
+  transition: transform .12s ease, background-color .12s ease, border-color .12s ease;
+}
+.btn-chip:hover { transform: translateY(-1px); background: rgba(255,255,255,0.08); }
+.btn-chip.danger { border-color: rgba(239,68,68,0.35); background: rgba(223, 16, 16, 0.651); }
+.btn-chip.danger:hover { background: rgba(239,68,68,0.2); }
