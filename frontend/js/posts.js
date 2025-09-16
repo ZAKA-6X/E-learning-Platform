@@ -412,8 +412,21 @@ document.addEventListener("DOMContentLoaded", () => {
     list.style.display = "none";
     controls.parentNode.insertBefore(list, controls.nextSibling);
 
-    // État interne
+    // État interne — la source de vérité des fichiers sélectionnés
     let dt = new DataTransfer();
+    // Exposer au form pour l'utiliser ailleurs
+    form._getSelectedFiles = () => Array.from(dt.files);
+
+    // Remettre la zone à zéro (utilisé après upload, cancel et "Supprimer tout")
+    function clearFiles() {
+      dt = new DataTransfer();
+      // Some browsers treat input.files as readonly – ignore if so
+      try {
+        input.files = dt.files;
+      } catch (_) {}
+      renderList();
+    }
+    form._resetSelectedFiles = clearFiles;
 
     function humanSize(bytes) {
       if (bytes < 1024) return bytes + " B";
@@ -553,10 +566,10 @@ document.addEventListener("DOMContentLoaded", () => {
       input.click();
     });
 
-    // Sélection native
     input.addEventListener("change", () => {
       addFiles(input.files);
-      input.value = ""; // dt = source of truth
+      // Réinitialiser pour permettre de re-sélectionner le même fichier ensuite
+      input.value = "";
     });
 
     // Drag & drop visuels
@@ -584,12 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
     });
 
-    // Supprimer tout
-    clearAll.addEventListener("click", () => {
-      dt = new DataTransfer();
-      input.files = dt.files;
-      renderList();
-    });
+    clearAll.addEventListener("click", clearFiles);
 
     // Init
     renderList();
@@ -651,10 +659,14 @@ document.addEventListener("DOMContentLoaded", () => {
       fd.append("audience", audience);
       fd.append("body_html", body_html);
 
-      // PDFs (multi)
-      if (mediaEl && mediaEl.files && mediaEl.files.length) {
-        Array.from(mediaEl.files).forEach((file) => fd.append("media", file));
-      }
+      // Fichiers sélectionnés : utiliser la DataTransfer exposée par setupFileMediaUI
+      const picked =
+        typeof form._getSelectedFiles === "function"
+          ? form._getSelectedFiles()
+          : mediaEl && mediaEl.files
+          ? Array.from(mediaEl.files)
+          : [];
+      picked.forEach((file) => fd.append("media", file));
 
       try {
         busy(true);
@@ -672,6 +684,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         form.reset?.();
         if (bodyEl) bodyEl.innerHTML = "";
+        if (typeof form._resetSelectedFiles === "function") {
+          form._resetSelectedFiles();
+        }
         alert("Publication créée !");
         document.dispatchEvent(
           new CustomEvent("post:created", { detail: data })
@@ -690,6 +705,9 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       form.reset?.();
       if (bodyEl) bodyEl.innerHTML = "";
+      if (typeof form._resetSelectedFiles === "function") {
+        form._resetSelectedFiles();
+      }
       document.dispatchEvent(new Event("post:cancelled"));
     });
   }
@@ -707,7 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
     var standaloneForm = qs("form.post-card");
     if (standaloneForm && !createBtn) {
       setupEditorImageUI(document);
-      setupFileMediaUI(form);
+      setupFileMediaUI(standaloneForm); // fix: pass the right form
       wireSubmit(standaloneForm);
     }
   }
