@@ -32,6 +32,13 @@ function sanitizeFilename(name) {
     .slice(0, 150);
 }
 
+function looksLikeFetchFailure(err) {
+  const msg = err?.message || err?.error || "";
+  return typeof msg === "string" && msg.toLowerCase().includes("fetch failed");
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms || 0));
+
 /** Create Post + (optional) PDF attachments */
 exports.addPost = async (req, res) => {
   try {
@@ -67,19 +74,35 @@ exports.addPost = async (req, res) => {
     }
 
     // 1) Insert the post
-    const { data: post, error: postError } = await supabase
-      .from("posts")
-      .insert({
-        school_id: schoolId,
-        user_id: userId,
-        title,
-        body_html: body_html || null,
-        audience: audienceEnum,
-        class_id: classId,
-        status: "published",
-      })
-      .select("*")
-      .single();
+    let post = null;
+    let postError = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const result = await supabase
+        .from("posts")
+        .insert({
+          school_id: schoolId,
+          user_id: userId,
+          title,
+          body_html: body_html || null,
+          audience: audienceEnum,
+          class_id: classId,
+          status: "published",
+        })
+        .select("*")
+        .single();
+
+      post = result.data;
+      postError = result.error;
+
+      if (!postError || !looksLikeFetchFailure(postError)) {
+        break;
+      }
+
+      console.warn(
+        `[addPost] insert retry ${attempt} due to fetch failure`
+      );
+      await sleep(150 * attempt);
+    }
 
     if (postError) {
       console.error("[addPost] insert post error", postError);
@@ -142,3 +165,99 @@ exports.addPost = async (req, res) => {
   }
 };
 
+/** List published posts visible to the authenticated user */
+exports.listPosts = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const schoolId = req.user?.school_id;
+    if (!userId || !schoolId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { data: userRow, error: userError } = await supabase
+      .from("users")
+      .select("id, class_id, first_name, last_name, email")
+      .eq("id", userId)
+      .single();
+
+    if (userError && userError.code !== "PGRST116") {
+      console.error("[listPosts] user lookup error", userError);
+      return res.status(500).json({ error: "Cannot resolve user context" });
+    }
+
+    const classId = userRow?.class_id ?? null;
+
+    const selectColumns = `
+      id,
+      title,
+      body_html,
+      audience,
+      class_id,
+      status,
+      created_at,
+      updated_at,
+      author:users!posts_user_id_fkey(id, first_name, last_name, email),
+      post_attachments(id, url, filename, media_type, size_bytes, created_at)
+    `;
+
+    let query = supabase
+      .from("posts")
+      .select(selectColumns)
+      .eq("school_id", schoolId)
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
+
+    if (classId) {
+      const classFilter = [
+        "audience.eq.school",
+        "audience.eq.all_classes",
+        `and(audience.eq.class,class_id.eq.${classId})`,
+      ].join(",");
+      query = query.or(classFilter);
+    } else {
+      query = query.in("audience", ["school", "all_classes"]);
+    }
+
+    const { data: postsData, error: postsError } = await query;
+
+    if (postsError) {
+      console.error("[listPosts] fetch posts error", postsError);
+      return res
+        .status(500)
+        .json({ error: postsError.message || "Query failed" });
+    }
+
+    const response = (postsData || []).map((post) => {
+      const author = post.author || null;
+      const parts = [];
+      if (author?.first_name) parts.push(author.first_name);
+      if (author?.last_name) parts.push(author.last_name);
+      const displayName = (parts.join(" ") || author?.email || "Utilisateur").trim();
+
+      return {
+        id: post.id,
+        title: post.title,
+        body_html: post.body_html,
+        audience: post.audience,
+        class_id: post.class_id,
+        created_at: post.created_at,
+        published_at: post.updated_at || null,
+        author: author
+          ? {
+              id: author.id,
+              name: displayName,
+              avatar_url: null,
+            }
+          : null,
+        attachments: Array.isArray(post.post_attachments)
+          ? post.post_attachments
+          : [],
+      };
+    });
+
+    return res.json(response);
+  } catch (err) {
+    console.error("[listPosts] exception", err);
+    return res.status(500).json({ error: err?.message || "Server error" });
+  }
+};

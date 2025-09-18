@@ -38,10 +38,16 @@
 
           <!-- Media -->
           <div class="post-field">
-            <label for="post-media" class="post-label">Médiacd <base href=""></label>
+            <label for="post-media" class="post-label">Médias</label>
             <div class="post-media">
               <label for="post-media">Cliquez ou glissez un fichier ici</label>
-              <input id="post-media" name="media" type="file" accept="application/pdf" multiple />
+              <input
+                id="post-media"
+                name="media"
+                type="file"
+                accept="application/pdf,audio/*"
+                multiple
+              />
             </div>
           </div>
 
@@ -99,13 +105,6 @@
                   <img
                     src="https://cdn.jsdelivr.net/npm/lucide-static/icons/link.svg"
                     alt="Link"
-                    class="tool-icon"
-                  />
-                </button>
-                <button type="button" class="tool-btn" data-cmd="insertImage">
-                  <img
-                    src="https://cdn.jsdelivr.net/npm/lucide-static/icons/image.svg"
-                    alt="Image"
                     class="tool-icon"
                   />
                 </button>

@@ -126,17 +126,12 @@ document.addEventListener("DOMContentLoaded", () => {
           if (cmd === "createLink") {
             var url = window.prompt("Lien URL:");
             if (url) document.execCommand("createLink", false, url);
-          } else if (cmd === "insertImage") {
-            captureSelection(editor);
-            ensureImagePicker(form).click();
           } else {
             document.execCommand(cmd, false, null);
           }
         });
       });
 
-      // Rich text image UX
-      setupEditorImageUI(form);
       // PDF media UX (multi-file chips) — styled to match your CSS
       setupFileMediaUI(form);
       // Submit → backend for this fresh form
@@ -149,205 +144,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!host) return;
     host.innerHTML = ""; // discard current draft entirely
     setPublicationsContentVisible(true);
-  }
-
-  // ---------- selection helpers (for image insert) ----------
-  function selectionInsideEditor(editor) {
-    var sel = window.getSelection ? window.getSelection() : null;
-    if (!sel || !sel.rangeCount) return false;
-    var r = sel.getRangeAt(0);
-    return (
-      editor &&
-      editor.contains(r.startContainer) &&
-      editor.contains(r.endContainer)
-    );
-  }
-  function captureSelection(editor) {
-    if (!editor) return;
-    var sel = window.getSelection ? window.getSelection() : null;
-    if (!sel || !sel.rangeCount) return;
-    var r = sel.getRangeAt(0);
-    if (editor.contains(r.startContainer) && editor.contains(r.endContainer)) {
-      editor._savedRange = r.cloneRange();
-    }
-  }
-  function restoreSavedRange(editor) {
-    if (!editor || !editor._savedRange) return false;
-    var sel = window.getSelection ? window.getSelection() : null;
-    if (!sel) return false;
-    sel.removeAllRanges();
-    sel.addRange(editor._savedRange);
-    return true;
-  }
-  function createRangeAtEnd(editor) {
-    ensureEditableTail(editor);
-    var range = document.createRange();
-    if (editor.lastChild && editor.lastChild.nodeType === Node.TEXT_NODE) {
-      range.setStart(editor.lastChild, editor.lastChild.length);
-    } else {
-      range.selectNodeContents(editor);
-      range.collapse(false);
-    }
-    return range;
-  }
-  function ensureEditableTail(editor) {
-    if (!editor.lastChild || editor.lastChild.nodeType !== Node.TEXT_NODE) {
-      editor.appendChild(document.createTextNode(" "));
-    }
-  }
-  function applyRange(range) {
-    var sel = window.getSelection ? window.getSelection() : null;
-    if (!sel) return;
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  // ---------- image insert + UI ----------
-  function ensureImagePicker(scope) {
-    var input = qs("#post-image-picker", scope);
-    if (input) return input;
-    input = document.createElement("input");
-    input.type = "file";
-    input.id = "post-image-picker";
-    input.accept = "image/*";
-    input.style.display = "none";
-    scope.appendChild(input);
-
-    on(input, "change", function () {
-      var editor = getEditor(scope);
-      if (!editor) return;
-      var file = input.files && input.files[0];
-      input.value = "";
-      if (!file || !file.type || file.type.indexOf("image/") !== 0) return;
-
-      var fr = new FileReader();
-      fr.onload = function () {
-        if (!selectionInsideEditor(editor)) {
-          if (!restoreSavedRange(editor)) applyRange(createRangeAtEnd(editor));
-        }
-        insertImageNode(editor, fr.result, file.name || "image");
-      };
-      fr.readAsDataURL(file);
-    });
-    return input;
-  }
-
-  function insertImageNode(editor, src, alt) {
-    if (!alt) alt = "image";
-    editor.focus();
-
-    var sel = window.getSelection ? window.getSelection() : null;
-    var range =
-      selectionInsideEditor(editor) && sel && sel.rangeCount
-        ? sel.getRangeAt(0)
-        : createRangeAtEnd(editor);
-    applyRange(range);
-
-    var wrap = document.createElement("span");
-    wrap.className = "ce-image";
-    wrap.setAttribute("contenteditable", "false");
-
-    var img = document.createElement("img");
-    img.src = src;
-    img.alt = alt;
-    img.draggable = false;
-    wrap.appendChild(img);
-
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "ce-image-remove";
-    btn.setAttribute("aria-label", "Supprimer l'image");
-    btn.innerHTML = "&times;";
-    wrap.appendChild(btn);
-
-    range.collapse(true);
-    range.insertNode(wrap);
-
-    var spacer = document.createTextNode(" ");
-    if (wrap.parentNode) wrap.parentNode.insertBefore(spacer, wrap.nextSibling);
-
-    var after = document.createRange();
-    after.setStartAfter(spacer);
-    after.collapse(true);
-    applyRange(after);
-
-    selectImage(wrap, editor);
-  }
-
-  function setupEditorImageUI(scope) {
-    var editor = getEditor(scope);
-    if (!editor) return;
-
-    on(editor, "keyup", function () {
-      captureSelection(editor);
-    });
-    on(editor, "mouseup", function () {
-      captureSelection(editor);
-    });
-    on(editor, "focus", function () {
-      captureSelection(editor);
-    });
-
-    on(editor, "click", function (e) {
-      var removeBtn =
-        e.target && e.target.closest
-          ? e.target.closest(".ce-image-remove")
-          : null;
-      if (removeBtn) {
-        var wrap = removeBtn.closest(".ce-image");
-        if (wrap) {
-          var nextFocus = wrap.nextSibling || wrap.previousSibling;
-          wrap.remove();
-          if (nextFocus && nextFocus.nodeType === Node.TEXT_NODE)
-            placeCaret(nextFocus, nextFocus.length);
-          else editor.focus();
-        }
-        return;
-      }
-      var imgWrap =
-        e.target && e.target.closest ? e.target.closest(".ce-image") : null;
-      var prev = qs(".ce-image.is-selected", editor);
-      if (imgWrap) {
-        if (prev && prev !== imgWrap) prev.classList.remove("is-selected");
-        imgWrap.classList.toggle("is-selected");
-      } else if (prev) prev.classList.remove("is-selected");
-    });
-
-    on(document, "click", function (e) {
-      if (!editor.contains(e.target)) {
-        var any = qs(".ce-image.is-selected", editor);
-        if (any) any.classList.remove("is-selected");
-      }
-    });
-
-    on(editor, "keydown", function (e) {
-      if (e.key !== "Delete" && e.key !== "Backspace") return;
-      var selected = qs(".ce-image.is-selected", editor);
-      if (!selected) return;
-      e.preventDefault();
-      var nextFocus = selected.nextSibling || selected.previousSibling;
-      selected.remove();
-      if (nextFocus && nextFocus.nodeType === Node.TEXT_NODE)
-        placeCaret(nextFocus, nextFocus.length);
-      else editor.focus();
-    });
-  }
-
-  function placeCaret(textNode, offset) {
-    var sel = window.getSelection ? window.getSelection() : null;
-    if (!sel) return;
-    var range = document.createRange();
-    var off = Math.min(offset || 0, textNode.length || 0);
-    range.setStart(textNode, off);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-  function selectImage(wrap, editor) {
-    qsa(".ce-image.is-selected", editor).forEach(function (w) {
-      if (w !== wrap) w.classList.remove("is-selected");
-    });
-    wrap.classList.add("is-selected");
   }
 
   // ---------- File media UX (multi-file, any type, click zone, drag-drop) ----------
@@ -675,10 +471,20 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { Authorization: `Bearer ${token}` }, // don't set Content-Type for FormData
           body: fd,
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch (parseErr) {
+          console.warn("[posts.js] JSON parse error", parseErr, text);
+        }
         if (!res.ok) {
-          console.error("Create post error:", data);
-          alert(data?.error || "Erreur lors de la publication.");
+          console.error("Create post error:", data || text);
+          const message =
+            (data && (data.error || data.message)) ||
+            text ||
+            "Erreur lors de la publication.";
+          alert(message);
           return;
         }
 
@@ -691,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.dispatchEvent(
           new CustomEvent("post:created", { detail: data })
         );
-        // Optionally: hideComposer();
+        hideComposer();
       } catch (err) {
         console.error(err);
         alert("Erreur réseau.");
