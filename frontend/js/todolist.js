@@ -22,6 +22,15 @@ async function apiFetch(url, opts = {}) {
   });
 }
 
+const toast = (message, type) => {
+  if (!message) return;
+  if (window.notify?.toast) {
+    window.notify.toast({ message, type });
+  } else {
+    window.alert(message);
+  }
+};
+
 // ---- State ----
 let CURRENT_TODOS = [];
 
@@ -94,7 +103,7 @@ async function handleAdd(e) {
     await loadTodos();
   } catch (e2) {
     console.error("Failed to add todo:", e2.message || e2);
-    alert("Échec d’ajout de la tâche. Voir la console pour le détail.");
+    toast("Échec d’ajout de la tâche. Voir la console pour le détail.", "error");
   }
 }
 
@@ -148,7 +157,18 @@ function bindListEvents() {
     // Delete
     if (target.classList.contains("todo-delete")) {
       const id = target.getAttribute("data-id");
-      if (!confirm("Supprimer cette tâche ?")) return;
+      let confirmed = true;
+      if (window.notify?.confirm) {
+        confirmed = await window.notify.confirm({
+          title: "Supprimer la tâche",
+          message: "Êtes-vous sûr de vouloir supprimer cette tâche ?",
+          confirmText: "Supprimer",
+          cancelText: "Annuler",
+        });
+      } else if (!window.confirm("Supprimer cette tâche ?")) {
+        confirmed = false;
+      }
+      if (!confirmed) return;
 
       try {
         const res = await apiFetch(`/todos/${id}`, { method: "DELETE" });

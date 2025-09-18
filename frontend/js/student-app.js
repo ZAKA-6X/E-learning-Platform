@@ -4,7 +4,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const state = {
     posts: [],
+    comments: new Map(), // postId -> { items: Comment[] }
+    view: "list", // or "detail"
+    activePostId: null,
   };
+
+  const toast = (message, type) => {
+    if (!message) return;
+    if (window.notify?.toast) {
+      window.notify.toast({ message, type });
+    } else {
+      window.alert(message);
+    }
+  };
+
+  function getToken() {
+    return localStorage.getItem("token");
+  }
+
+  async function authedFetch(url, options = {}) {
+    const token = getToken();
+    if (!token) throw new Error("AUTH_MISSING");
+    const headers = Object.assign({}, options.headers, {
+      Authorization: `Bearer ${token}`,
+    });
+    return fetch(url, { ...options, headers });
+  }
 
   function showMessage(message) {
     feedEl.innerHTML = "";
@@ -12,6 +37,64 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.className = "muted";
     msg.textContent = message;
     feedEl.appendChild(msg);
+  }
+
+  let lightbox = null;
+  let lightboxImg = null;
+
+  function ensureLightbox() {
+    if (lightbox) return;
+
+    lightbox = document.createElement("div");
+    lightbox.className = "image-lightbox";
+    lightbox.setAttribute("role", "dialog");
+    lightbox.setAttribute("aria-modal", "true");
+    lightbox.tabIndex = -1;
+
+    const content = document.createElement("div");
+    content.className = "image-lightbox__content";
+
+    lightboxImg = document.createElement("img");
+    lightboxImg.className = "image-lightbox__img";
+    lightboxImg.alt = "";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "image-lightbox__close";
+    closeBtn.innerHTML = "&times;";
+    closeBtn.addEventListener("click", hideLightbox);
+
+    content.appendChild(lightboxImg);
+    content.appendChild(closeBtn);
+    lightbox.appendChild(content);
+
+    lightbox.addEventListener("click", (e) => {
+      if (e.target === lightbox) hideLightbox();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hideLightbox();
+    });
+
+    document.body.appendChild(lightbox);
+  }
+
+  function showLightbox(src, alt) {
+    ensureLightbox();
+    if (!lightbox || !lightboxImg) return;
+    lightboxImg.src = src;
+    lightboxImg.alt = alt || "";
+    lightbox.classList.add("is-visible");
+    lightbox.focus();
+  }
+
+  function hideLightbox() {
+    if (!lightbox) return;
+    lightbox.classList.remove("is-visible");
+    if (lightboxImg) {
+      lightboxImg.src = "";
+      lightboxImg.alt = "";
+    }
   }
 
   function formatDate(iso) {
@@ -38,6 +121,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function updateCommentCountDisplay(post) {
+    const countEl = feedEl.querySelector(
+      `[data-post-id="${post.id}"] .comment-count-number`
+    );
+    if (countEl) {
+      countEl.textContent = post.comment_count || 0;
+    }
+  }
+
   function renderAttachments(container, attachments) {
     const list = document.createElement("div");
     list.className = "post-attachments";
@@ -59,6 +151,10 @@ document.addEventListener("DOMContentLoaded", () => {
         img.src = att.url;
         img.alt = att.filename || "Image";
         figure.appendChild(img);
+        figure.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showLightbox(att.url, img.alt);
+        });
         list.appendChild(figure);
         return;
       }
@@ -93,9 +189,280 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function renderPost(post) {
+  function applyVoteStyles(targetValue, upBtn, downBtn) {
+    upBtn.classList.toggle("is-active", targetValue === 1);
+    downBtn.classList.toggle("is-active", targetValue === -1);
+  }
+
+  async function handlePostVote(post, direction, controls) {
+    try {
+      const current = post.user_vote || 0;
+      const nextValue = current === direction ? 0 : direction;
+      const res = await authedFetch(`/api/posts/${post.id}/votes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: nextValue }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("votePost error", data);
+        toast(data?.error || "Impossible d'enregistrer votre vote.", "error");
+        return;
+      }
+
+      post.score = data.score ?? 0;
+      post.user_vote = data.user_vote ?? 0;
+      controls.score.textContent = post.score;
+      applyVoteStyles(post.user_vote, controls.upBtn, controls.downBtn);
+    } catch (err) {
+      console.error("handlePostVote", err);
+      toast("Erreur réseau.", "error");
+    }
+  }
+
+  function createPostVoteControls(post) {
+    const wrap = document.createElement("div");
+    wrap.className = "vote-controls";
+
+    const upBtn = document.createElement("button");
+    upBtn.type = "button";
+    upBtn.className = "vote-btn vote-btn--up";
+    upBtn.title = "Approuver";
+    upBtn.textContent = "▲";
+
+    const score = document.createElement("span");
+    score.className = "vote-score";
+    score.textContent = post.score ?? 0;
+
+    const downBtn = document.createElement("button");
+    downBtn.type = "button";
+    downBtn.className = "vote-btn vote-btn--down";
+    downBtn.title = "Désapprouver";
+    downBtn.textContent = "▼";
+
+    applyVoteStyles(post.user_vote || 0, upBtn, downBtn);
+
+    const controls = { upBtn, downBtn, score };
+    upBtn.addEventListener("click", () => handlePostVote(post, 1, controls));
+    downBtn.addEventListener("click", () => handlePostVote(post, -1, controls));
+
+    wrap.appendChild(upBtn);
+    wrap.appendChild(score);
+    wrap.appendChild(downBtn);
+    return wrap;
+  }
+
+  async function handleCommentVote(comment, direction, controls, postId) {
+    try {
+      const current = comment.user_vote || 0;
+      const nextValue = current === direction ? 0 : direction;
+      const res = await authedFetch(`/api/posts/comments/${comment.id}/votes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: nextValue }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("voteComment error", data);
+        toast(data?.error || "Impossible d'enregistrer le vote.", "error");
+        return;
+      }
+      comment.score = data.score ?? 0;
+      comment.user_vote = data.user_vote ?? 0;
+      controls.score.textContent = comment.score;
+      applyVoteStyles(comment.user_vote, controls.upBtn, controls.downBtn);
+    } catch (err) {
+      console.error("handleCommentVote", err);
+      toast("Erreur réseau.", "error");
+    }
+  }
+
+  function createCommentVoteControls(comment, postId) {
+    const wrap = document.createElement("div");
+    wrap.className = "vote-controls vote-controls--comment";
+
+    const upBtn = document.createElement("button");
+    upBtn.type = "button";
+    upBtn.className = "vote-btn vote-btn--up";
+    upBtn.textContent = "▲";
+
+    const score = document.createElement("span");
+    score.className = "vote-score";
+    score.textContent = comment.score ?? 0;
+
+    const downBtn = document.createElement("button");
+    downBtn.type = "button";
+    downBtn.className = "vote-btn vote-btn--down";
+    downBtn.textContent = "▼";
+
+    applyVoteStyles(comment.user_vote || 0, upBtn, downBtn);
+
+    const controls = { upBtn, downBtn, score };
+    upBtn.addEventListener("click", () =>
+      handleCommentVote(comment, 1, controls, postId)
+    );
+    downBtn.addEventListener("click", () =>
+      handleCommentVote(comment, -1, controls, postId)
+    );
+
+    wrap.appendChild(upBtn);
+    wrap.appendChild(score);
+    wrap.appendChild(downBtn);
+    return wrap;
+  }
+
+  function createCommentElement(comment, postId) {
+    const item = document.createElement("article");
+    item.className = "comment";
+
+    const meta = document.createElement("div");
+    meta.className = "comment-meta";
+    const author = document.createElement("span");
+    author.className = "comment-author";
+    author.textContent = comment.author?.name || "Utilisateur";
+
+    const date = document.createElement("time");
+    date.className = "comment-date";
+    date.dateTime = comment.created_at || "";
+    date.textContent = formatDate(comment.created_at);
+
+    meta.appendChild(author);
+    meta.appendChild(date);
+
+    const body = document.createElement("div");
+    body.className = "comment-body";
+    body.textContent = comment.body;
+
+    const actions = document.createElement("div");
+    actions.className = "comment-actions";
+    const voteControls = createCommentVoteControls(comment, postId);
+    actions.appendChild(voteControls);
+
+    item.appendChild(meta);
+    item.appendChild(body);
+    item.appendChild(actions);
+    return item;
+  }
+
+  function createCommentForm(post, section) {
+    const form = document.createElement("form");
+    form.className = "comment-form";
+    form.noValidate = true;
+
+    const textarea = document.createElement("textarea");
+    textarea.name = "body";
+    textarea.placeholder = "Écrire un commentaire…";
+    textarea.required = true;
+
+    const actions = document.createElement("div");
+    actions.className = "comment-form-actions";
+
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "btn btn-primary";
+    submit.textContent = "Commenter";
+
+    actions.appendChild(submit);
+    form.appendChild(textarea);
+    form.appendChild(actions);
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = textarea.value.trim();
+      if (!text) return;
+
+      submit.disabled = true;
+      try {
+        const res = await authedFetch(`/api/posts/${post.id}/comments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: text }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          console.error("addComment error", data);
+          toast(data?.error || "Impossible d'ajouter le commentaire.", "error");
+          return;
+        }
+
+        textarea.value = "";
+        const entry = state.comments.get(post.id) || { items: [] };
+        entry.items.push(data);
+        state.comments.set(post.id, entry);
+        post.comment_count = (post.comment_count || 0) + 1;
+        updateCommentCountDisplay(post);
+        renderComments(section, post);
+      } catch (err) {
+        console.error("addComment", err);
+        toast("Erreur réseau.", "error");
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    return form;
+  }
+
+  function renderComments(section, post) {
+    const entry = state.comments.get(post.id) || { items: [] };
+    section.innerHTML = "";
+
+    const list = document.createElement("div");
+    list.className = "comments-list";
+    entry.items.forEach((comment) => {
+      list.appendChild(createCommentElement(comment, post.id));
+    });
+
+    section.appendChild(list);
+    section.appendChild(createCommentForm(post, section));
+  }
+
+  async function ensureCommentsLoaded(post, section) {
+    const cached = state.comments.get(post.id);
+    if (cached && Array.isArray(cached.items)) {
+      renderComments(section, post);
+      return;
+    }
+
+    section.innerHTML = "<div class=\"muted\">Chargement des commentaires…</div>";
+    try {
+      const res = await authedFetch(`/api/posts/${post.id}/comments`);
+      const data = await res.json().catch(() => []);
+      if (!res.ok) {
+        console.error("listComments error", data);
+        section.innerHTML = "<div class=\"muted\">Chargement impossible.</div>";
+        return;
+      }
+      const items = Array.isArray(data) ? data : [];
+      state.comments.set(post.id, { items });
+      post.comment_count = items.length;
+      updateCommentCountDisplay(post);
+      renderComments(section, post);
+    } catch (err) {
+      console.error("ensureCommentsLoaded", err);
+      section.innerHTML = "<div class=\"muted\">Erreur réseau.</div>";
+    }
+  }
+
+  function renderPost(post, options = {}) {
+    const { showBack = false, autoShowComments = false } = options;
     const card = document.createElement("article");
     card.className = "post-card feed-post";
+    card.dataset.postId = post.id;
+
+    if (showBack) {
+      const backBtn = document.createElement("button");
+      backBtn.type = "button";
+      backBtn.className = "post-back-btn";
+      backBtn.textContent = "← Retour aux publications";
+      backBtn.addEventListener("click", () => {
+        state.view = "list";
+        state.activePostId = null;
+        renderFeed();
+      });
+      card.appendChild(backBtn);
+    }
 
     if (post.title) {
       const title = document.createElement("h3");
@@ -138,26 +505,79 @@ document.addEventListener("DOMContentLoaded", () => {
       renderAttachments(card, post.attachments);
     }
 
+    const actions = document.createElement("div");
+    actions.className = "post-actions";
+
+    const actionsLeft = document.createElement("div");
+    actionsLeft.className = "post-actions-left";
+    actionsLeft.appendChild(createPostVoteControls(post));
+
+    const commentInfo = document.createElement("div");
+    commentInfo.className = "comment-info";
+    commentInfo.innerHTML = `
+      <i class="fa-regular fa-comments"></i>
+      <span class="comment-count-number">${post.comment_count || 0}</span>
+    `;
+    actionsLeft.appendChild(commentInfo);
+
+    actions.appendChild(actionsLeft);
+    card.appendChild(actions);
+
+    if (autoShowComments) {
+      const commentSection = document.createElement("section");
+      commentSection.className = "post-comments";
+      card.appendChild(commentSection);
+      ensureCommentsLoaded(post, commentSection);
+    }
+
     return card;
   }
 
-  function render(posts) {
-    state.posts = posts;
+  function renderFeed() {
     feedEl.innerHTML = "";
 
+    const posts = Array.isArray(state.posts) ? state.posts : [];
     if (!posts.length) {
       showMessage("Aucune publication pour le moment.");
       return;
     }
 
-    posts.forEach((p) => {
-      const card = renderPost(p);
+    if (state.view === "detail") {
+      const active = posts.find((p) => p.id === state.activePostId);
+      if (!active) {
+        state.view = "list";
+        state.activePostId = null;
+        renderFeed();
+        return;
+      }
+      const card = renderPost(active, {
+        showBack: true,
+        autoShowComments: true,
+      });
+      feedEl.appendChild(card);
+      return;
+    }
+
+    posts.forEach((post) => {
+      const card = renderPost(post);
+
+      card.classList.add("is-clickable");
+      card.addEventListener("click", () => {
+        showDetail(post.id);
+      });
+
       feedEl.appendChild(card);
     });
   }
 
+  function showDetail(postId) {
+    state.view = "detail";
+    state.activePostId = postId;
+    renderFeed();
+  }
+
   async function loadPosts(showSpinner = true) {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     if (!token) {
       showMessage("Veuillez vous reconnecter pour voir les publications.");
       return;
@@ -168,19 +588,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const res = await fetch("/api/posts", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const res = await authedFetch("/api/posts");
       if (!res.ok) {
         const errBody = await res.text();
         console.error("/api/posts error", errBody);
         showMessage("Impossible de charger les publications.");
         return;
       }
-
       const data = await res.json();
-      render(Array.isArray(data) ? data : []);
+      state.posts = Array.isArray(data) ? data : [];
+      renderFeed();
     } catch (err) {
       console.error("loadPosts error", err);
       showMessage("Erreur réseau : veuillez réessayer.");

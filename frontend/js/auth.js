@@ -1,6 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("form");
 
+  const toast = (message, type) => {
+    if (!message) return;
+    if (window.notify?.toast) {
+      window.notify.toast({ message, type });
+    } else {
+      window.alert(message);
+    }
+  };
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -29,13 +38,14 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (data.user.role === "student") {
           window.location.href = "../pages/student-dashboard.html";
         } else {
-          alert("Unknown role");
+          toast("Rôle inconnu", "error");
         }
       } else {
-        alert(data.message || "Login failed");
+        toast(data.message || "Connexion échouée", "error");
       }
     } catch (error) {
       console.error("Login error:", error);
+      toast("Erreur réseau lors de la connexion", "error");
     }
   });
 });

@@ -39,6 +39,73 @@ function looksLikeFetchFailure(err) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms || 0));
 
+async function runWithRetry(requestFactory, attempts = 3, label = "supabase") {
+  let lastResult = null;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const result = await requestFactory();
+      const err = result?.error;
+      if (!err || !looksLikeFetchFailure(err)) {
+        return result;
+      }
+      lastResult = result;
+      console.warn(
+        `[${label}] retry ${attempt} due to fetch failure`);
+    } catch (err) {
+      if (!looksLikeFetchFailure(err)) throw err;
+      lastResult = { error: err };
+      console.warn(`[${label}] retry ${attempt} due to fetch failure`);
+    }
+    if (attempt < attempts) await sleep(150 * attempt);
+  }
+  return lastResult || { error: new Error("Fetch failed") };
+}
+
+function formatUserIdentity(user) {
+  if (!user) return null;
+  const parts = [];
+  if (user.first_name) parts.push(user.first_name);
+  if (user.last_name) parts.push(user.last_name);
+  const name = (parts.join(" ") || user.email || "Utilisateur").trim();
+  return {
+    id: user.id,
+    name,
+    avatar_url: null,
+  };
+}
+
+function normalizeVoteValue(raw) {
+  if (raw === undefined || raw === null || raw === "") return 0;
+  if (raw === "up") return 1;
+  if (raw === "down") return -1;
+  const num = Number(raw);
+  if (num === 1 || num === -1 || num === 0) return num;
+  return null;
+}
+
+async function recalcScore(table, keyColumn, keyValue) {
+  const result = await runWithRetry(
+    () =>
+      supabase
+        .from(table)
+        .select("value")
+        .eq(keyColumn, keyValue),
+    3,
+    `recalcScore.${table}`
+  );
+
+  const data = result.data;
+  const error = result.error;
+
+  if (error && error.code !== "PGRST116") {
+    return { error };
+  }
+
+  const rows = Array.isArray(data) ? data : [];
+  const score = rows.reduce((acc, row) => acc + Number(row?.value || 0), 0);
+  return { data: score };
+}
+
 /** Create Post + (optional) PDF attachments */
 exports.addPost = async (req, res) => {
   try {
@@ -74,35 +141,27 @@ exports.addPost = async (req, res) => {
     }
 
     // 1) Insert the post
-    let post = null;
-    let postError = null;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      const result = await supabase
-        .from("posts")
-        .insert({
-          school_id: schoolId,
-          user_id: userId,
-          title,
-          body_html: body_html || null,
-          audience: audienceEnum,
-          class_id: classId,
-          status: "published",
-        })
-        .select("*")
-        .single();
+    const insertResult = await runWithRetry(
+      () =>
+        supabase
+          .from("posts")
+          .insert({
+            school_id: schoolId,
+            user_id: userId,
+            title,
+            body_html: body_html || null,
+            audience: audienceEnum,
+            class_id: classId,
+            status: "published",
+          })
+          .select("*")
+          .single(),
+      3,
+      "addPost.insert"
+    );
 
-      post = result.data;
-      postError = result.error;
-
-      if (!postError || !looksLikeFetchFailure(postError)) {
-        break;
-      }
-
-      console.warn(
-        `[addPost] insert retry ${attempt} due to fetch failure`
-      );
-      await sleep(150 * attempt);
-    }
+    const post = insertResult.data;
+    const postError = insertResult.error;
 
     if (postError) {
       console.error("[addPost] insert post error", postError);
@@ -174,11 +233,19 @@ exports.listPosts = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { data: userRow, error: userError } = await supabase
-      .from("users")
-      .select("id, class_id, first_name, last_name, email")
-      .eq("id", userId)
-      .single();
+    const userResult = await runWithRetry(
+      () =>
+        supabase
+          .from("users")
+          .select("id, class_id, first_name, last_name, email")
+          .eq("id", userId)
+          .single(),
+      3,
+      "listPosts.user"
+    );
+
+    const userRow = userResult.data;
+    const userError = userResult.error;
 
     if (userError && userError.code !== "PGRST116") {
       console.error("[listPosts] user lookup error", userError);
@@ -200,25 +267,35 @@ exports.listPosts = async (req, res) => {
       post_attachments(id, url, filename, media_type, size_bytes, created_at)
     `;
 
-    let query = supabase
-      .from("posts")
-      .select(selectColumns)
-      .eq("school_id", schoolId)
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
+    const buildPostsQuery = () => {
+      let builder = supabase
+        .from("posts")
+        .select(selectColumns)
+        .eq("school_id", schoolId)
+        .eq("status", "published")
+        .order("created_at", { ascending: false });
 
-    if (classId) {
-      const classFilter = [
-        "audience.eq.school",
-        "audience.eq.all_classes",
-        `and(audience.eq.class,class_id.eq.${classId})`,
-      ].join(",");
-      query = query.or(classFilter);
-    } else {
-      query = query.in("audience", ["school", "all_classes"]);
-    }
+      if (classId) {
+        const classFilter = [
+          "audience.eq.school",
+          "audience.eq.all_classes",
+          `and(audience.eq.class,class_id.eq.${classId})`,
+        ].join(",");
+        builder = builder.or(classFilter);
+      } else {
+        builder = builder.in("audience", ["school", "all_classes"]);
+      }
+      return builder;
+    };
 
-    const { data: postsData, error: postsError } = await query;
+    const postsResult = await runWithRetry(
+      () => buildPostsQuery(),
+      3,
+      "listPosts.posts"
+    );
+
+    const postsData = postsResult.data;
+    const postsError = postsResult.error;
 
     if (postsError) {
       console.error("[listPosts] fetch posts error", postsError);
@@ -227,13 +304,76 @@ exports.listPosts = async (req, res) => {
         .json({ error: postsError.message || "Query failed" });
     }
 
+    const postIds = (postsData || []).map((p) => p.id).filter(Boolean);
+
+    const scoreByPost = {};
+    const userVoteByPost = {};
+    const commentCountByPost = {};
+
+    if (postIds.length) {
+      const votesResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_votes")
+            .select("post_id, value")
+            .in("post_id", postIds),
+        3,
+        "listPosts.votes"
+      );
+
+      const votesRows = votesResult.data;
+      const votesError = votesResult.error;
+
+      if (!votesError && Array.isArray(votesRows)) {
+        votesRows.forEach((row) => {
+          const key = row?.post_id;
+          if (!key) return;
+          scoreByPost[key] = (scoreByPost[key] || 0) + Number(row.value || 0);
+        });
+      }
+
+      const userVotesResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_votes")
+            .select("post_id, value")
+            .eq("user_id", userId)
+            .in("post_id", postIds),
+        3,
+        "listPosts.userVotes"
+      );
+
+      const userVotesRows = userVotesResult.data;
+
+      if (Array.isArray(userVotesRows)) {
+        userVotesRows.forEach((row) => {
+          if (row?.post_id) userVoteByPost[row.post_id] = Number(row.value || 0);
+        });
+      }
+
+      const commentCountsResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_comments")
+            .select("post_id")
+            .in("post_id", postIds),
+        3,
+        "listPosts.commentCounts"
+      );
+
+      const commentCountsRows = commentCountsResult.data;
+
+      if (Array.isArray(commentCountsRows)) {
+        commentCountsRows.forEach((row) => {
+          const key = row?.post_id;
+          if (!key) return;
+          commentCountByPost[key] = (commentCountByPost[key] || 0) + 1;
+        });
+      }
+    }
+
     const response = (postsData || []).map((post) => {
       const author = post.author || null;
-      const parts = [];
-      if (author?.first_name) parts.push(author.first_name);
-      if (author?.last_name) parts.push(author.last_name);
-      const displayName = (parts.join(" ") || author?.email || "Utilisateur").trim();
-
       return {
         id: post.id,
         title: post.title,
@@ -242,22 +382,361 @@ exports.listPosts = async (req, res) => {
         class_id: post.class_id,
         created_at: post.created_at,
         published_at: post.updated_at || null,
-        author: author
-          ? {
-              id: author.id,
-              name: displayName,
-              avatar_url: null,
-            }
-          : null,
+        author: formatUserIdentity(author),
         attachments: Array.isArray(post.post_attachments)
           ? post.post_attachments
           : [],
+        score: scoreByPost[post.id] || 0,
+        user_vote: userVoteByPost[post.id] || 0,
+        comment_count: commentCountByPost[post.id] || 0,
       };
     });
 
     return res.json(response);
   } catch (err) {
     console.error("[listPosts] exception", err);
+    return res.status(500).json({ error: err?.message || "Server error" });
+  }
+};
+
+exports.addComment = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const postId = Number(req.params.postId);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!Number.isInteger(postId) || postId <= 0) {
+      return res.status(400).json({ error: "Invalid post id" });
+    }
+
+    const textRaw = req.body?.body ?? req.body?.text ?? "";
+    const text = String(textRaw).trim();
+    if (!text) return res.status(400).json({ error: "Comment text is required" });
+
+    let parentId = req.body?.parent_id ?? null;
+    if (parentId !== null && parentId !== undefined && parentId !== "") {
+      parentId = Number(parentId);
+      if (!Number.isInteger(parentId) || parentId <= 0) {
+        return res.status(400).json({ error: "Invalid parent comment" });
+      }
+      const parentResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_comments")
+            .select("id, post_id")
+            .eq("id", parentId)
+            .single(),
+        3,
+        "addComment.parent"
+      );
+
+      const parent = parentResult.data;
+      const parentError = parentResult.error;
+
+      if (parentError || !parent) {
+        return res.status(400).json({ error: "Parent comment not found" });
+      }
+      if (parent.post_id !== postId) {
+        return res.status(400).json({ error: "Parent comment mismatch" });
+      }
+    } else {
+      parentId = null;
+    }
+
+    const insertResult = await runWithRetry(
+      () =>
+        supabase
+          .from("post_comments")
+          .insert({
+            post_id: postId,
+            user_id: userId,
+            body: text,
+            parent_id: parentId,
+          })
+          .select(
+            "id, post_id, body, parent_id, created_at, user:user_id (id, first_name, last_name, email)"
+          )
+          .single(),
+      3,
+      "addComment.insert"
+    );
+
+    const data = insertResult.data;
+    const error = insertResult.error;
+
+    if (error) {
+      console.error("[addComment] insert error", error);
+      return res.status(400).json({ error: error.message || "Insert failed" });
+    }
+
+    return res.status(201).json({
+      id: data.id,
+      body: data.body,
+      parent_id: data.parent_id,
+      created_at: data.created_at,
+      author: formatUserIdentity(data.user),
+      score: 0,
+      user_vote: 0,
+    });
+  } catch (err) {
+    console.error("[addComment] exception", err);
+    return res.status(500).json({ error: err?.message || "Server error" });
+  }
+};
+
+exports.listComments = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const postId = Number(req.params.postId);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!Number.isInteger(postId) || postId <= 0) {
+      return res.status(400).json({ error: "Invalid post id" });
+    }
+
+    const commentsResult = await runWithRetry(
+      () =>
+        supabase
+          .from("post_comments")
+          .select(
+            "id, post_id, body, parent_id, created_at, user:user_id (id, first_name, last_name, email)"
+          )
+          .eq("post_id", postId)
+          .order("created_at", { ascending: true }),
+      3,
+      "listComments.fetch"
+    );
+
+    const comments = commentsResult.data;
+    const error = commentsResult.error;
+
+    if (error) {
+      if (looksLikeFetchFailure(error)) {
+        console.warn("[listComments] fetch failed — returning empty list");
+        return res.json([]);
+      }
+      console.error("[listComments] fetch error", error);
+      return res.status(500).json({ error: error.message || "Query failed" });
+    }
+
+    const rows = Array.isArray(comments) ? comments : [];
+    if (!rows.length) return res.json([]);
+
+    const commentIds = rows.map((c) => c.id).filter(Boolean);
+    const scoreById = {};
+    const userVoteById = {};
+
+    if (commentIds.length) {
+      const voteResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_comment_votes")
+            .select("comment_id, value")
+            .in("comment_id", commentIds),
+        3,
+        "listComments.votes"
+      );
+
+      const voteRows = voteResult.data;
+      const voteError = voteResult.error;
+
+      if (!voteError && Array.isArray(voteRows)) {
+        voteRows.forEach((row) => {
+          const key = row?.comment_id;
+          if (!key) return;
+          scoreById[key] = (scoreById[key] || 0) + Number(row.value || 0);
+        });
+      }
+
+      const userVoteResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_comment_votes")
+            .select("comment_id, value")
+            .eq("user_id", userId)
+            .in("comment_id", commentIds),
+        3,
+        "listComments.userVotes"
+      );
+
+      const userVoteRows = userVoteResult.data;
+
+      if (Array.isArray(userVoteRows)) {
+        userVoteRows.forEach((row) => {
+          if (row?.comment_id) {
+            userVoteById[row.comment_id] = Number(row.value || 0);
+          }
+        });
+      }
+    }
+
+    const payload = rows.map((comment) => ({
+      id: comment.id,
+      body: comment.body,
+      parent_id: comment.parent_id,
+      created_at: comment.created_at,
+      author: formatUserIdentity(comment.user),
+      score: scoreById[comment.id] || 0,
+      user_vote: userVoteById[comment.id] || 0,
+    }));
+
+    return res.json(payload);
+  } catch (err) {
+    console.error("[listComments] exception", err);
+    return res.status(500).json({ error: err?.message || "Server error" });
+  }
+};
+
+exports.votePost = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const postId = Number(req.params.postId);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!Number.isInteger(postId) || postId <= 0) {
+      return res.status(400).json({ error: "Invalid post id" });
+    }
+
+    const value = normalizeVoteValue(req.body?.value);
+    if (value === null) {
+      return res.status(400).json({ error: "Invalid vote value" });
+    }
+
+    if (value === 0) {
+      const deleteResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_votes")
+            .delete()
+            .eq("post_id", postId)
+            .eq("user_id", userId),
+        3,
+        "votePost.delete"
+      );
+      const error = deleteResult.error;
+      if (error && error.code !== "PGRST116") {
+        console.error("[votePost] delete error", error);
+        return res.status(500).json({ error: error.message || "Delete failed" });
+      }
+    } else {
+      const upsertResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_votes")
+            .upsert(
+              [
+                {
+                  post_id: postId,
+                  user_id: userId,
+                  value,
+                },
+              ],
+              { onConflict: "post_id,user_id" }
+            ),
+        3,
+        "votePost.upsert"
+      );
+
+      const error = upsertResult.error;
+
+      if (error) {
+        console.error("[votePost] upsert error", error);
+        return res.status(500).json({ error: error.message || "Upsert failed" });
+      }
+    }
+
+    const { data: score, error: scoreError } = await recalcScore(
+      "post_votes",
+      "post_id",
+      postId
+    );
+
+    if (scoreError) {
+      console.error("[votePost] score error", scoreError);
+      return res.status(500).json({ error: scoreError.message || "Score failed" });
+    }
+
+    return res.json({
+      post_id: postId,
+      score: score ?? 0,
+      user_vote: value,
+    });
+  } catch (err) {
+    console.error("[votePost] exception", err);
+    return res.status(500).json({ error: err?.message || "Server error" });
+  }
+};
+
+exports.voteComment = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const commentId = Number(req.params.commentId);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!Number.isInteger(commentId) || commentId <= 0) {
+      return res.status(400).json({ error: "Invalid comment id" });
+    }
+
+    const value = normalizeVoteValue(req.body?.value);
+    if (value === null) {
+      return res.status(400).json({ error: "Invalid vote value" });
+    }
+
+    if (value === 0) {
+      const deleteResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_comment_votes")
+            .delete()
+            .eq("comment_id", commentId)
+            .eq("user_id", userId),
+        3,
+        "voteComment.delete"
+      );
+      const error = deleteResult.error;
+      if (error && error.code !== "PGRST116") {
+        console.error("[voteComment] delete error", error);
+        return res.status(500).json({ error: error.message || "Delete failed" });
+      }
+    } else {
+      const upsertResult = await runWithRetry(
+        () =>
+          supabase
+            .from("post_comment_votes")
+            .upsert(
+              [
+                {
+                  comment_id: commentId,
+                  user_id: userId,
+                  value,
+                },
+              ],
+              { onConflict: "comment_id,user_id" }
+            ),
+        3,
+        "voteComment.upsert"
+      );
+      const error = upsertResult.error;
+      if (error) {
+        console.error("[voteComment] upsert error", error);
+        return res.status(500).json({ error: error.message || "Upsert failed" });
+      }
+    }
+
+    const { data: score, error: scoreError } = await recalcScore(
+      "post_comment_votes",
+      "comment_id",
+      commentId
+    );
+
+    if (scoreError) {
+      console.error("[voteComment] score error", scoreError);
+      return res.status(500).json({ error: scoreError.message || "Score failed" });
+    }
+
+    return res.json({
+      comment_id: commentId,
+      score: score ?? 0,
+      user_vote: value,
+    });
+  } catch (err) {
+    console.error("[voteComment] exception", err);
     return res.status(500).json({ error: err?.message || "Server error" });
   }
 };

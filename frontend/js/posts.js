@@ -15,6 +15,15 @@ document.addEventListener("DOMContentLoaded", () => {
     return qs("#post-body", scope);
   }
 
+  function toast(message, type) {
+    if (!message) return;
+    if (window.notify?.toast) {
+      window.notify.toast({ message, type });
+    } else {
+      window.alert(message);
+    }
+  }
+
   // ---------- nav to Publications and toggle composer ----------
   function showSection(sectionId) {
     var nav =
@@ -435,7 +444,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("Vous n'êtes pas authentifié.");
+        toast("Vous n'êtes pas authentifié.", "error");
         return;
       }
 
@@ -445,7 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const body_html = bodyEl?.innerHTML?.trim() || "";
 
       if (!title) {
-        alert("Le titre est requis.");
+        toast("Le titre est requis.", "error");
         return;
       }
 
@@ -484,7 +493,7 @@ document.addEventListener("DOMContentLoaded", () => {
             (data && (data.error || data.message)) ||
             text ||
             "Erreur lors de la publication.";
-          alert(message);
+          toast(message, "error");
           return;
         }
 
@@ -493,14 +502,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof form._resetSelectedFiles === "function") {
           form._resetSelectedFiles();
         }
-        alert("Publication créée !");
+        toast("Publication créée !", "success");
         document.dispatchEvent(
           new CustomEvent("post:created", { detail: data })
         );
         hideComposer();
       } catch (err) {
         console.error(err);
-        alert("Erreur réseau.");
+        toast("Erreur réseau.", "error");
       } finally {
         busy(false);
       }

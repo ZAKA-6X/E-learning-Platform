@@ -17,6 +17,10 @@ Project structure and setup for E-learning Platform.
     #####Student Part########
     update navbar menu,
     add todo Function,
+    add posts create,
+    add display posts,
+    add comments and vote to posts,
+    
     
 
 

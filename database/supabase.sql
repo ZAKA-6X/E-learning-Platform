@@ -178,6 +178,57 @@ create table public.post_attachments (
 
 
 /* ===========================================================
+   📌 Table: post_comments
+   Comments authored by users on posts (supports threading via parent_id).
+   =========================================================== */
+create table public.post_comments (
+  id bigserial primary key,
+  post_id bigint not null references public.posts (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  parent_id bigint null references public.post_comments (id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint post_comments_parent_chk check (parent_id is null or parent_id <> id)
+) TABLESPACE pg_default;
+
+create index post_comments_post_parent_idx
+  on public.post_comments (post_id, parent_id, created_at);
+
+
+/* ===========================================================
+   📌 Table: post_votes
+   Stores up/down votes per user on posts.
+   =========================================================== */
+create table public.post_votes (
+  id bigserial primary key,
+  post_id bigint not null references public.posts (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  value smallint not null check (value in (1, -1)),
+  created_at timestamptz not null default now(),
+  constraint post_votes_unique unique (post_id, user_id)
+) TABLESPACE pg_default;
+
+create index post_votes_post_id_idx on public.post_votes (post_id);
+
+
+/* ===========================================================
+   📌 Table: post_comment_votes
+   Up/down votes on individual comments.
+   =========================================================== */
+create table public.post_comment_votes (
+  id bigserial primary key,
+  comment_id bigint not null references public.post_comments (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  value smallint not null check (value in (1, -1)),
+  created_at timestamptz not null default now(),
+  constraint post_comment_votes_unique unique (comment_id, user_id)
+) TABLESPACE pg_default;
+
+create index post_comment_votes_comment_idx on public.post_comment_votes (comment_id);
+
+
+/* ===========================================================
    📌 Table: courses
    Courses offered in schools (ties subjects, teachers, classes).
    =========================================================== */
