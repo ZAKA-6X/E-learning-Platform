@@ -121,6 +121,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function roleLabel(role) {
+    switch ((role || "").toLowerCase()) {
+      case "admin":
+        return "Administration";
+      case "teacher":
+        return "Enseignant";
+      case "student":
+        return "Élève";
+      case "parent":
+      case "guardian":
+        return "Parent";
+      default:
+        return "";
+    }
+  }
+
   function updateCommentCountDisplay(post) {
     const countEl = feedEl.querySelector(
       `[data-post-id="${post.id}"] .comment-count-number`
@@ -318,6 +334,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const meta = document.createElement("div");
     meta.className = "comment-meta";
+
+    const metaLeft = document.createElement("div");
+    metaLeft.className = "comment-meta-left";
+
     const author = document.createElement("span");
     author.className = "comment-author";
     author.textContent = comment.author?.name || "Utilisateur";
@@ -327,7 +347,16 @@ document.addEventListener("DOMContentLoaded", () => {
     date.dateTime = comment.created_at || "";
     date.textContent = formatDate(comment.created_at);
 
-    meta.appendChild(author);
+    metaLeft.appendChild(author);
+    const role = roleLabel(comment.author?.role);
+    if (role) {
+      const badge = document.createElement("span");
+      badge.className = "comment-author-role";
+      badge.textContent = role;
+      metaLeft.appendChild(badge);
+    }
+
+    meta.appendChild(metaLeft);
     meta.appendChild(date);
 
     const body = document.createElement("div");
@@ -479,6 +508,14 @@ document.addEventListener("DOMContentLoaded", () => {
       author.className = "post-author";
       author.textContent = post.author.name;
       meta.appendChild(author);
+    }
+
+    const role = roleLabel(post.author?.role);
+    if (role) {
+      const roleEl = document.createElement("span");
+      roleEl.className = "post-author-role";
+      roleEl.textContent = role;
+      meta.appendChild(roleEl);
     }
 
     const time = document.createElement("time");

@@ -20,7 +20,9 @@
       <input type="text" placeholder="Recherche Clica" aria-label="Rechercher"/>
     </div>
     <div class="user-menu" role="group" aria-label="Menu utilisateur">
-      <button class="action-button" type="button"><i class="fas fa-plus"></i> Créer</button>
+      <button class="action-button" type="button" id="btn-creer" data-open="publications">
+        <i class="fas fa-plus"></i> Créer
+      </button>
       <button class="action-button" type="button">Formation</button>
       <div class="user-avatar" aria-hidden="true">U</div>
     </div>
@@ -115,7 +117,7 @@
       <div class="sidebar-section">
           <div class="sidebar-header">Communication</div>
         <div class="sidebar-group">
-          <a href="#" class="sidebar-item" id="nav-announcements" data-nav="announcements">
+          <a href="#" class="sidebar-item" id="nav-publications" data-nav="publications">
             <span class="sidebar-icon"><i class="fa-regular fa-message"></i></span> Annonces
           </a>
           <a href="#" class="sidebar-item" id="nav-messaging" data-nav="messaging">
@@ -346,9 +348,20 @@
           <p>Docs de l’établissement.</p>
         </section>
 
-        <section class="content-section" id="announcements">
-          <h2>Annonces</h2>
-          <p>Communiqués officiels.</p>
+        <section class="content-section" id="publications">
+          <h2>🖼 Publications</h2>
+
+          <div
+            id="post-composer-host"
+            data-component="post-composer"
+            data-src="../pages/student-post.html"
+            data-selector="form.post-card"
+            data-ready="false"
+          ></div>
+
+          <div id="feed" class="card" style="margin-top: 14px;">
+            <div class="muted">Rien à afficher pour le moment…</div>
+          </div>
         </section>
 
         <section class="content-section" id="messaging">
@@ -464,7 +477,10 @@
   </div>
 
   <!-- Scripts existants -->
+  <script src="../js/notify.js" defer></script>
   <script src="../js/navbar.js"></script>
+  <script src="../js/student-app.js"></script>
+  <script src="../js/posts.js"></script>
   <script src="../js/matiere.js"></script>
   <script src="../js/kpi.js"></script>
 </body>

@@ -70,7 +70,8 @@ function formatUserIdentity(user) {
   return {
     id: user.id,
     name,
-    avatar_url: null,
+    avatar_url: user.avatar_url ?? null,
+    role: user.role || null,
   };
 }
 
@@ -233,27 +234,6 @@ exports.listPosts = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const userResult = await runWithRetry(
-      () =>
-        supabase
-          .from("users")
-          .select("id, class_id, first_name, last_name, email")
-          .eq("id", userId)
-          .single(),
-      3,
-      "listPosts.user"
-    );
-
-    const userRow = userResult.data;
-    const userError = userResult.error;
-
-    if (userError && userError.code !== "PGRST116") {
-      console.error("[listPosts] user lookup error", userError);
-      return res.status(500).json({ error: "Cannot resolve user context" });
-    }
-
-    const classId = userRow?.class_id ?? null;
-
     const selectColumns = `
       id,
       title,
@@ -263,30 +243,17 @@ exports.listPosts = async (req, res) => {
       status,
       created_at,
       updated_at,
-      author:users!posts_user_id_fkey(id, first_name, last_name, email),
+      author:users!posts_user_id_fkey(id, first_name, last_name, email, role),
       post_attachments(id, url, filename, media_type, size_bytes, created_at)
     `;
 
-    const buildPostsQuery = () => {
-      let builder = supabase
+    const buildPostsQuery = () =>
+      supabase
         .from("posts")
         .select(selectColumns)
         .eq("school_id", schoolId)
         .eq("status", "published")
         .order("created_at", { ascending: false });
-
-      if (classId) {
-        const classFilter = [
-          "audience.eq.school",
-          "audience.eq.all_classes",
-          `and(audience.eq.class,class_id.eq.${classId})`,
-        ].join(",");
-        builder = builder.or(classFilter);
-      } else {
-        builder = builder.in("audience", ["school", "all_classes"]);
-      }
-      return builder;
-    };
 
     const postsResult = await runWithRetry(
       () => buildPostsQuery(),
@@ -453,7 +420,7 @@ exports.addComment = async (req, res) => {
             parent_id: parentId,
           })
           .select(
-            "id, post_id, body, parent_id, created_at, user:user_id (id, first_name, last_name, email)"
+            "id, post_id, body, parent_id, created_at, user:user_id (id, first_name, last_name, email, role)"
           )
           .single(),
       3,
@@ -497,7 +464,7 @@ exports.listComments = async (req, res) => {
         supabase
           .from("post_comments")
           .select(
-            "id, post_id, body, parent_id, created_at, user:user_id (id, first_name, last_name, email)"
+            "id, post_id, body, parent_id, created_at, user:user_id (id, first_name, last_name, email, role)"
           )
           .eq("post_id", postId)
           .order("created_at", { ascending: true }),

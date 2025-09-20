@@ -1,10 +1,13 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
-const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 const subjectsRoutes = require('./routes/subjectsRoutes');
-
-dotenv.config();
+const classesRoutes = require('./routes/classesRoutes');
+const coursesRoutes = require('./routes/coursesRoutes');
+const postsRoutes = require('./routes/postsRoutes');
+const fileRoutes = require('./routes/fileRoutes');
 const app = express();
 const port = process.env.PORT;
 
@@ -15,15 +18,21 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 app.use('/', require('./routes/authRoutes'));
+if (typeof fileRoutes === 'function') {
+    app.use('/', fileRoutes);
+}
 app.use('/admin', require('./routes/adminRoutes'));
 app.use('/todos', require('./routes/todosRoutes'));
 app.use('/subjects', subjectsRoutes);
-
-// app.js (only the relevant line)
-const postsRoutes = require("./routes/postsRoutes");
-app.use("/api/posts", postsRoutes);
+app.use('/classes', classesRoutes);
+app.use('/api/courses', coursesRoutes);
+app.use('/api/posts', postsRoutes);
 
 // Redirect root to login   
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/pages/login.html'));
+});
+
 app.get('/', (req, res) => {
     res.redirect('/login');
 });
@@ -31,5 +40,3 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
-
-

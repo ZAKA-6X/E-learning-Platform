@@ -601,6 +601,16 @@
   align-items: center;
   gap: 6px;
 }
+.post-author-role {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(93, 95, 239, 0.12);
+  color: var(--primary-ink, #3730a3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .post-meta .post-audience::before {
   content: "\f0ac";
   font-family: "Font Awesome 6 Free";
@@ -720,9 +730,25 @@
 .comment-meta {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 6px;
+}
+.comment-meta-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.comment-author-role {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(93, 95, 239, 0.12);
+  color: var(--primary-ink, #3730a3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .comment-body {
   color: var(--ink);

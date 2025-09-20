@@ -7,16 +7,16 @@ function toItems(data) {
     ? data.map((row) => ({
         id: row.id,
         name: row.name,
-        code: row.code || null,
+        room: row.room || null,
       }))
     : [];
 }
 
 /**
- * GET /subjects, /subjects/mine
- * Returns subjects belonging to the logged-in user's school.
+ * GET /classes/mine
+ * Returns classes for the authenticated user's school.
  */
-exports.getSubjectsForSchool = async (req, res) => {
+exports.getClassesMine = async (req, res) => {
   try {
     const schoolId = req.user?.school_id;
     if (!schoolId) {
@@ -24,21 +24,19 @@ exports.getSubjectsForSchool = async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from('subjects')
-      .select('id,name')
+      .from('classes')
+      .select('id,name,room')
       .eq('school_id', schoolId)
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('Supabase error fetching subjects:', error);
+      console.error('Supabase error fetching classes (mine):', error);
       return res.status(500).json({ error: error.message });
     }
 
-    return res.status(200).json({ items: toItems(data) });
+    return res.json({ items: toItems(data) });
   } catch (err) {
-    console.error('Error in getSubjectsForSchool:', err);
+    console.error('Error in getClassesMine:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
-
-exports.getSubjectsMine = exports.getSubjectsForSchool;
