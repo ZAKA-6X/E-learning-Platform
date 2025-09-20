@@ -7,6 +7,26 @@ function sendSbError(res, error, code = 500) {
   return res.status(code).json({ error: error?.message || "Server error" });
 }
 
+function shapeCourse(row) {
+  if (!row) return row;
+
+  const subject = row.subject || row.subjects || null;
+  const klass = row.klass || row.class || row.classes || null;
+
+  const shaped = {
+    ...row,
+    subject_name: subject?.name || null,
+    class_name: klass?.name || null,
+    class_room: klass?.room || null,
+  };
+
+  ["subject", "subjects", "klass", "class", "classes"].forEach((key) => {
+    if (key in shaped) delete shaped[key];
+  });
+
+  return shaped;
+}
+
 /**
  * GET /api/courses
  * List teacher courses scoped by school + teacher (from req.user)
@@ -22,13 +42,16 @@ exports.list = async (req, res) => {
 
     const { data, error } = await supabase
       .from("courses")
-      .select("*")
+      .select(
+        "*, subject:subjects(name), klass:classes(name, room)"
+      )
       .eq("teacher_id", teacherId)
       .eq("school_id", schoolId)
       .order("updated_at", { ascending: false });
 
     if (error) return sendSbError(res, error);
-    return res.json({ items: data || [] });
+    const items = Array.isArray(data) ? data.map(shapeCourse) : [];
+    return res.json({ items });
   } catch (err) {
     return sendSbError(res, err);
   }
@@ -66,11 +89,11 @@ exports.create = async (req, res) => {
     const { data, error } = await supabase
       .from("courses")
       .insert(payload)
-      .select()
+      .select("*, subject:subjects(name), klass:classes(name, room)")
       .single();
 
     if (error) return sendSbError(res, error, 400);
-    return res.status(201).json({ item: data });
+    return res.status(201).json({ item: shapeCourse(data) });
   } catch (err) {
     return sendSbError(res, err);
   }

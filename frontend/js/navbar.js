@@ -14,6 +14,15 @@
 
   const qsAll = (root, sel) => Array.from(root.querySelectorAll(sel));
 
+  const safeParse = (value) => {
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  };
+
   function decodeJwtRoleFromToken() {
     const token =
       localStorage.getItem('token') || sessionStorage.getItem('token') || '';
@@ -41,6 +50,19 @@
   function getDashboardId() {
     // Allow pages to set <body data-dashboard="student">; else use path
     return document.body?.dataset?.dashboard || window.location.pathname;
+  }
+
+  function applyAvatarInitial() {
+    const profileName = (localStorage.getItem('user_profile_name') || '').trim();
+    const storedUser = safeParse(localStorage.getItem('user'));
+    const candidate = profileName || storedUser?.email || storedUser?.role || '';
+    const letter = candidate ? candidate.charAt(0).toUpperCase() : 'U';
+
+    qsAll(document, '.user-avatar').forEach((node) => {
+      if (!node.textContent || node.textContent === 'U' || node.dataset.forceInitial === 'true') {
+        node.textContent = letter || 'U';
+      }
+    });
   }
 
   function findBestSectionId(contentRoot, guessId) {
@@ -146,6 +168,74 @@
       scopeEl.querySelector('.content-container') || document;
     if (!navEl) return;
 
+    const toggleBtn = scopeEl.querySelector('.mobile-nav-toggle');
+    const body = document.body;
+    const mq = window.matchMedia('(max-width: 980px)');
+    let closeSidebar = () => {};
+    let openSidebar = () => {};
+
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-controls', navEl.id || 'left-sidebar');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+
+      const updateAria = () =>
+        toggleBtn.setAttribute(
+          'aria-expanded',
+          body.classList.contains('sidebar-open') ? 'true' : 'false'
+        );
+
+      const handleEscape = (event) => {
+        if (event.key === 'Escape') {
+          closeSidebar();
+        }
+      };
+
+      const handleOutsideClick = (event) => {
+        if (!body.classList.contains('sidebar-open')) return;
+        const target = event.target;
+        if (!target) return;
+        if (toggleBtn.contains(target)) return;
+        if (navEl.contains(target)) return;
+        closeSidebar();
+      };
+
+      closeSidebar = () => {
+        body.classList.remove('sidebar-open');
+        updateAria();
+        document.removeEventListener('keydown', handleEscape);
+        document.removeEventListener('click', handleOutsideClick);
+      };
+
+      openSidebar = () => {
+        body.classList.add('sidebar-open');
+        updateAria();
+        document.addEventListener('keydown', handleEscape);
+        document.addEventListener('click', handleOutsideClick);
+      };
+
+      toggleBtn.addEventListener('click', () => {
+        if (body.classList.contains('sidebar-open')) {
+          closeSidebar();
+        } else {
+          openSidebar();
+        }
+      });
+
+      mq.addEventListener?.('change', (evt) => {
+        if (!evt.matches) {
+          closeSidebar();
+        }
+      });
+      if (!mq.addEventListener) {
+        // Safari fallback
+        mq.addListener((evt) => {
+          if (!evt.matches) {
+            closeSidebar();
+          }
+        });
+      }
+    }
+
     // Build link->section map (and filter by role)
     const links = normalizeLinkToSection(navEl, contentRoot);
     const sections = qsAll(contentRoot, '.content-section');
@@ -164,6 +254,10 @@
         save: true,
         focus: true,
       });
+
+      if (mq.matches) {
+        closeSidebar();
+      }
     });
 
     // Sidebar toggle (right panel)
@@ -200,6 +294,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    applyAvatarInitial();
     const scopes = document.querySelectorAll('[data-dashboard-scope]');
     if (scopes.length) {
       scopes.forEach(initScope);

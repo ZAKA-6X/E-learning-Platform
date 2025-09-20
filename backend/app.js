@@ -8,6 +8,7 @@ const classesRoutes = require('./routes/classesRoutes');
 const coursesRoutes = require('./routes/coursesRoutes');
 const postsRoutes = require('./routes/postsRoutes');
 const fileRoutes = require('./routes/fileRoutes');
+const usersRoutes = require('./routes/usersRoutes');
 const app = express();
 const port = process.env.PORT;
 
@@ -27,6 +28,7 @@ app.use('/subjects', subjectsRoutes);
 app.use('/classes', classesRoutes);
 app.use('/api/courses', coursesRoutes);
 app.use('/api/posts', postsRoutes);
+app.use('/api/users', usersRoutes);
 
 // Redirect root to login   
 app.get('/login', (req, res) => {

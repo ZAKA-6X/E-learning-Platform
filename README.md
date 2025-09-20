@@ -20,6 +20,8 @@ Project structure and setup for E-learning Platform.
     add posts create,
     add display posts,
     add comments and vote to posts,
+    set posts for teachers users,
+    add user profile section,
     
     
 

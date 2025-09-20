@@ -18,7 +18,16 @@
   <body>
     <!-- Header -->
     <header class="header" id="header" name="header">
-      <div class="logo" id="logo" name="logo">ClicaEd</div>
+      <div class="header-brand">
+        <button class="mobile-nav-toggle" type="button">
+          <span class="sr-only">Ouvrir le menu</span>
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+        <div class="logo" id="logo" name="logo">
+          <img src="../assets/logo.png" alt="Logo ClicaEd" />
+          <span>ClicaEd</span>
+        </div>
+      </div>
 
       <div class="search-bar" id="search-bar" name="search-bar">
         <input
@@ -34,7 +43,7 @@
         <button class="action-button" id="btn-creer" name="creer" title="Créer" data-open="publications">
           <i class="fa-solid fa-plus"></i> Créer
         </button>
-        <div class="user-avatar" id="user-avatar" name="user-avatar">U</div>
+        <a class="user-avatar" id="user-avatar" name="user-avatar" href="/pages/profile.html" title="Voir mon profil">U</a>
       </div>
     </header>
 

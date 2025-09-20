@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClicaEd — Mon profil</title>
+    <link rel="icon" type="image/png" href="../assets/icon.png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/main.css" />
+  </head>
+  <body data-dashboard="profile">
+    <header class="header" id="profile-header">
+      <div class="header-brand">
+        <button class="mobile-nav-toggle" type="button" aria-hidden="true" tabindex="-1" style="display:none">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+        <a class="logo" id="profile-home-link" href="/pages/teacher-dashboard.html">
+          <img src="../assets/logo.png" alt="Logo ClicaEd" />
+          <span>ClicaEd</span>
+        </a>
+      </div>
+
+      <div class="user-menu">
+        <a class="action-button" id="profile-back" href="/pages/teacher-dashboard.html">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Retour</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="main-container profile-main">
+      <div class="centered-content">
+        <div class="content-container">
+          <section class="card profile-card" aria-labelledby="profile-name">
+            <div class="profile-head">
+              <div class="profile-avatar" id="profile-avatar" aria-hidden="true">—</div>
+              <div>
+                <h1 class="profile-name" id="profile-name">Mon profil</h1>
+                <p class="muted" id="profile-role">Chargement…</p>
+              </div>
+            </div>
+
+            <dl class="profile-list">
+              <div class="profile-field">
+                <dt>Nom complet</dt>
+                <dd id="profile-fullname">—</dd>
+              </div>
+              <div class="profile-field">
+                <dt>Email</dt>
+                <dd id="profile-email">—</dd>
+              </div>
+              <div class="profile-field">
+                <dt>Téléphone</dt>
+                <dd id="profile-phone">—</dd>
+              </div>
+              <div class="profile-field">
+                <dt>Rôle</dt>
+                <dd id="profile-role-name">—</dd>
+              </div>
+              <div class="profile-field">
+                <dt>Établissement</dt>
+                <dd id="profile-school">—</dd>
+              </div>
+              <div class="profile-field">
+                <dt>Classe</dt>
+                <dd id="profile-class">—</dd>
+              </div>
+              <div class="profile-field">
+                <dt>Statut</dt>
+                <dd id="profile-status">—</dd>
+              </div>
+              <div class="profile-field">
+                <dt>Dernière connexion</dt>
+                <dd id="profile-last-login">—</dd>
+              </div>
+              <div class="profile-field">
+                <dt>Inscription</dt>
+                <dd id="profile-created">—</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="card profile-card profile-error hidden" id="profile-error" role="alert">
+            <h2>Impossible de charger le profil</h2>
+            <p id="profile-error-message"></p>
+            <button class="action-button" id="profile-retry">
+              <i class="fa-solid fa-rotate"></i>
+              Réessayer
+            </button>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/profile.js" defer></script>
+  </body>
+</html>
