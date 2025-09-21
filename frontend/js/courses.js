@@ -554,6 +554,22 @@
       const card = document.createElement("article");
       card.className = "resource-card";
 
+      const courseId = state.selectedId;
+      let primaryHref = "#";
+      let openTarget = null;
+      let openRel = null;
+      let isDisabled = false;
+
+      if (courseId) {
+        primaryHref = `/pages/media-reader.html?courseId=${encodeURIComponent(courseId)}&resourceId=${encodeURIComponent(item.id)}`;
+      } else if (item.resource_url) {
+        primaryHref = item.resource_url;
+        openTarget = "_blank";
+        openRel = "noopener noreferrer";
+      } else {
+        isDisabled = true;
+      }
+
       const top = document.createElement("div");
       top.className = "resource-card__top";
 
@@ -591,16 +607,52 @@
       meta.textContent = parts.join(" • ") || "—";
       card.appendChild(meta);
 
-      if (item.resource_url) {
+      if (item.id) {
         const actions = document.createElement("div");
         actions.className = "resource-card__actions";
         const link = document.createElement("a");
-        link.href = item.resource_url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
+        if (!isDisabled) {
+          link.href = primaryHref;
+          if (openTarget) link.target = openTarget;
+          if (openRel) link.rel = openRel;
+        } else {
+          link.href = "#";
+          link.setAttribute("aria-disabled", "true");
+        }
+
         link.textContent = "Ouvrir";
         actions.appendChild(link);
         card.appendChild(actions);
+      }
+
+      if (!isDisabled) {
+        card.classList.add("resource-card--link");
+        card.tabIndex = 0;
+        card.setAttribute("role", "link");
+
+        const navigate = () => {
+          if (!primaryHref || primaryHref === "#") return;
+          if (openTarget === "_blank") {
+            const newWindow = window.open(primaryHref, "_blank", "noopener");
+            if (newWindow) newWindow.opener = null;
+          } else {
+            window.location.href = primaryHref;
+          }
+        };
+
+        card.addEventListener("click", (event) => {
+          const interactive = event.target.closest("a, button, input, textarea, select");
+          if (interactive) return;
+          event.preventDefault();
+          navigate();
+        });
+
+        card.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            navigate();
+          }
+        });
       }
 
       el.detailResources.appendChild(card);

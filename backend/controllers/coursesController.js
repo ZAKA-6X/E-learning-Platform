@@ -137,7 +137,7 @@ exports.getOne = async (req, res) => {
       supabase
         .from("course_resources")
         .select(
-          "id, title, description, kind, resource_url, section_id, position, updated_at"
+          "id, title, description, kind, resource_url, content, section_id, position, created_at, updated_at"
         )
         .eq("course_id", courseId)
         .order("position", { ascending: true }),
@@ -312,7 +312,7 @@ exports.createSection = async (req, res) => {
       .from("course_resources")
       .insert(resourcePayload)
       .select(
-        "id, title, description, kind, resource_url, section_id, position, updated_at"
+        "id, title, description, kind, resource_url, content, section_id, position, created_at, updated_at"
       )
       .single();
 
