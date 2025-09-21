@@ -16,4 +16,5 @@ module.exports = {
   uploadMediaArray: upload.array('media', 10),
   // If you prefer fields style:
   uploadMediaFields: upload.fields([{ name: 'media', maxCount: 10 }]),
+  uploadSingleMedia: upload.single('media'),
 };

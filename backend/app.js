@@ -9,6 +9,7 @@ const coursesRoutes = require('./routes/coursesRoutes');
 const postsRoutes = require('./routes/postsRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const usersRoutes = require('./routes/usersRoutes');
+const uploadsDir = path.join(__dirname, '../uploads');
 const app = express();
 const port = process.env.PORT;
 
@@ -16,6 +17,7 @@ const port = process.env.PORT;
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 app.use('/', require('./routes/authRoutes'));

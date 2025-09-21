@@ -259,3 +259,47 @@ create table public.courses (
   constraint courses_subject_id_fkey foreign KEY (subject_id) references subjects (id) on delete RESTRICT,
   constraint courses_teacher_id_fkey foreign KEY (teacher_id) references users (id) on delete CASCADE
 ) TABLESPACE pg_default;
+
+
+/* ===========================================================
+   📌 Table: course_sections
+   Logical sections/chapters within a course.
+   =========================================================== */
+create table public.course_sections (
+  id uuid not null default gen_random_uuid (),
+  course_id uuid not null,
+  title text not null,
+  description text null,
+  position integer not null default 0,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint course_sections_pkey primary key (id),
+  constraint course_sections_course_id_fkey foreign KEY (course_id) references courses (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index course_sections_course_idx on public.course_sections (course_id, position);
+
+
+/* ===========================================================
+   📌 Table: course_resources
+   Learning resources (documents, vidéos, liens) attachées à un cours.
+   =========================================================== */
+create table public.course_resources (
+  id uuid not null default gen_random_uuid (),
+  course_id uuid not null,
+  section_id uuid null,
+  title text not null,
+  kind text not null default 'document',
+  description text null,
+  resource_url text null,
+  content text null,
+  position integer not null default 0,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint course_resources_pkey primary key (id),
+  constraint course_resources_course_id_fkey foreign KEY (course_id) references courses (id) on delete CASCADE,
+  constraint course_resources_section_id_fkey foreign KEY (section_id) references course_sections (id) on delete set null
+) TABLESPACE pg_default;
+
+create index course_resources_course_idx on public.course_resources (course_id, position);
+create index course_resources_section_idx on public.course_resources (section_id, position);

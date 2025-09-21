@@ -152,6 +152,113 @@
                 <button class="action-button" id="btn-empty-new">Créer un cours</button>
               </div>
 
+              <!-- Course Detail View -->
+              <section id="course-detail" class="course-detail hidden" aria-live="polite">
+                <div class="course-detail__hero">
+                  <div class="course-detail__hero-top">
+                    <button type="button" class="btn-secondary" id="course-detail-back">
+                      <i class="fa-solid fa-arrow-left"></i>
+                      Retour aux cours
+                    </button>
+                    <span class="course-detail__status" id="course-detail-status">—</span>
+                  </div>
+
+                  <div class="course-detail__hero-main">
+                    <div class="course-detail__icon" aria-hidden="true">
+                      <i class="fa-solid fa-folder"></i>
+                    </div>
+                    <div class="course-detail__meta">
+                      <div class="course-detail__breadcrumb" id="course-detail-breadcrumb">—</div>
+                      <h3 class="course-detail__title" id="course-detail-title">Titre du cours</h3>
+                      <p class="course-detail__subtitle" id="course-detail-subtitle">—</p>
+                    </div>
+                    <div class="course-detail__search">
+                      <i class="fa-solid fa-magnifying-glass"></i>
+                      <input
+                        type="search"
+                        id="course-detail-search"
+                        placeholder="Rechercher dans ce cours…"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </div>
+
+                </div>
+
+                  <div class="course-detail__body">
+                    <div id="course-detail-loading" class="course-detail__loading">
+                      <div class="loader"></div>
+                      <p>Chargement du cours…</p>
+                    </div>
+
+                  <div id="course-detail-content" class="course-detail__content hidden">
+                    <section class="course-block">
+                      <header class="course-block__header course-block__header--tight">
+                        <div class="course-block__title-wrap">
+                          <h4>Ressources</h4>
+                          <span id="course-detail-resources-count" class="course-block__count">0</span>
+                        </div>
+                        <button class="btn-secondary course-block__action" id="course-detail-add-resource" disabled>
+                          <i class="fa-solid fa-plus"></i> Ajouter une section
+                        </button>
+                      </header>
+                      <div id="course-detail-resources" class="resource-grid"></div>
+                      <div id="course-detail-resources-empty" class="course-block__empty hidden">
+                        <p>Aucune ressource pour le moment.</p>
+                      </div>
+                    </section>
+
+                  </div>
+
+                  <div id="course-detail-error" class="course-detail__error hidden">
+                    <p>Impossible de charger ce cours pour le moment.</p>
+                  </div>
+                </div>
+              </section>
+
+              <dialog id="section-dialog" class="course-dialog">
+                <form id="section-form" class="course-form" autocomplete="off" enctype="multipart/form-data">
+                  <div class="dialog-header">
+                    <h3>Nouvelle section</h3>
+                    <button type="button" class="icon-btn" id="section-dlg-close" title="Fermer">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+
+                  <div class="form-grid">
+                    <label class="field" style="grid-column: span 2;">
+                      <span>Titre de la section *</span>
+                      <input type="text" id="section-title" name="title" placeholder="ex: Chapitre 1 - Introduction" required />
+                    </label>
+
+                    <label class="field" style="grid-column: span 2;">
+                      <span>Description</span>
+                      <input type="text" id="section-description" name="description" placeholder="Optionnel" />
+                    </label>
+
+                    <label class="field" style="grid-column: span 2;">
+                      <span>Titre du média</span>
+                      <input type="text" id="section-media-title" name="resource_title" placeholder="Par défaut, reprend le titre de la section" />
+                    </label>
+
+                    <label class="field" style="grid-column: span 2;">
+                      <span>Fichier (PDF, image ou vidéo) *</span>
+                      <input type="file" id="section-media" name="media" accept="application/pdf,image/*,video/*" required />
+                    </label>
+                    <p class="muted" style="grid-column: span 2; margin: 0; font-size: 0.85rem;">
+                      Un seul fichier par section. Formats acceptés&nbsp;: PDF, images ou vidéos.
+                    </p>
+                  </div>
+
+                  <div class="dialog-actions">
+                    <button type="button" class="btn-secondary" id="section-dlg-cancel">Annuler</button>
+                    <button type="submit" class="btn-primary" id="section-dlg-save">
+                      <i class="fa-solid fa-floppy-disk"></i> Enregistrer
+                    </button>
+                  </div>
+                </form>
+              </dialog>
+
               <!-- Dialog: Create / Edit Course -->
               <dialog id="course-dialog" class="course-dialog">
                 <form id="course-form" method="dialog" class="course-form" autocomplete="off">
