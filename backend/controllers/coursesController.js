@@ -1,4 +1,3 @@
-// backend/controllers/coursesController.js
 const fs = require("fs");
 const path = require("path");
 const { randomUUID } = require("node:crypto");
@@ -15,15 +14,34 @@ function shapeCourse(row) {
 
   const subject = row.subject || row.subjects || null;
   const klass = row.klass || row.class || row.classes || null;
+  const teacher =
+    row.teacher ||
+    row.teachers ||
+    row.instructor ||
+    row.user ||
+    row.users ||
+    null;
+
+  const teacherName = teacher
+    ? [teacher.first_name, teacher.last_name].filter(Boolean).join(" ").trim()
+    : "";
 
   const shaped = {
     ...row,
     subject_name: subject?.name || null,
     class_name: klass?.name || null,
     class_room: klass?.room || null,
+    teacher_name:
+      teacherName || teacher?.display_name || teacher?.name || teacher?.email || null,
+    teacher_email: teacher?.email || null,
+    teacher_id: row.teacher_id || teacher?.id || null,
   };
 
   ["subject", "subjects", "klass", "class", "classes"].forEach((key) => {
+    if (key in shaped) delete shaped[key];
+  });
+
+  ["teacher", "teachers", "instructor", "user", "users"].forEach((key) => {
     if (key in shaped) delete shaped[key];
   });
 
@@ -76,9 +94,7 @@ exports.list = async (req, res) => {
 
     const { data, error } = await supabase
       .from("courses")
-      .select(
-        "*, subject:subjects(name), klass:classes(name, room)"
-      )
+      .select("*, subject:subjects(name), klass:classes(name, room)")
       .eq("teacher_id", teacherId)
       .eq("school_id", schoolId)
       .order("updated_at", { ascending: false });
@@ -86,6 +102,66 @@ exports.list = async (req, res) => {
     if (error) return sendSbError(res, error);
     const items = Array.isArray(data) ? data.map(shapeCourse) : [];
     return res.json({ items });
+  } catch (err) {
+    return sendSbError(res, err);
+  }
+};
+
+/**
+ * GET /api/courses/student
+ * List published courses for the authenticated student's class.
+ */
+exports.listForStudent = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { data: userRow, error: userErr } = await supabase
+      .from("users")
+      .select("id, school_id, class_id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (userErr) return sendSbError(res, userErr);
+    if (!userRow) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const schoolId = userRow.school_id;
+    const classId = userRow.class_id;
+
+    // No class assigned -> success with explicit reason
+    if (!classId) {
+      return res.status(200).json({ items: [], meta: { reason: "NO_CLASS" } });
+    }
+
+    // Select only what the UI needs
+    const SELECT_COLUMNS =
+      "id, title, code, status, updated_at, created_at, " +
+      "subject:subjects(name), " +
+      "klass:classes(name, room), " +
+      "teacher:users!courses_teacher_id_fkey(id, first_name, last_name, email)";
+
+    const { data, error } = await supabase
+      .from("courses")
+      .select(SELECT_COLUMNS)
+      .eq("school_id", schoolId)
+      .eq("class_id", classId)
+      .eq("status", "published")
+      .order("updated_at", { ascending: false });
+
+    if (error) return sendSbError(res, error);
+
+    const items = Array.isArray(data) ? data.map(shapeCourse) : [];
+
+    // Class exists but zero published courses -> success with explicit reason
+    if (items.length === 0) {
+      return res.status(200).json({ items: [], meta: { reason: "NO_COURSES" } });
+    }
+
+    return res.status(200).json({ items });
   } catch (err) {
     return sendSbError(res, err);
   }
@@ -146,12 +222,8 @@ exports.getOne = async (req, res) => {
     if (sectionsResp.error) return sendSbError(res, sectionsResp.error);
     if (resourcesResp.error) return sendSbError(res, resourcesResp.error);
 
-    const sections = Array.isArray(sectionsResp.data)
-      ? sectionsResp.data
-      : [];
-    const resources = Array.isArray(resourcesResp.data)
-      ? resourcesResp.data
-      : [];
+    const sections = Array.isArray(sectionsResp.data) ? sectionsResp.data : [];
+    const resources = Array.isArray(resourcesResp.data) ? resourcesResp.data : [];
 
     const documentsCount = resources.filter(
       (item) => (item.kind || "document").toLowerCase() === "document"

@@ -52,32 +52,31 @@ async function loadTodos() {
     CURRENT_TODOS = todos;
 
     if (!todos || todos.length === 0) {
-      listEl.innerHTML = `<li class="py-2 text-sm text-gray-500">Aucune tâche pour le moment.</li>`;
+      listEl.innerHTML = `<li class="todo-empty">Aucune tâche pour le moment.</li>`;
       return;
     }
 
     listEl.innerHTML = "";
     todos.forEach((t) => {
       const li = document.createElement("li");
-      li.className =
-        "flex items-center justify-between gap-3 py-2 border-b border-gray-200";
+      li.className = "todo-item";
       li.innerHTML = `
-        <label class="flex items-center gap-2 flex-1">
+        <label class="todo-item-body">
           <input type="checkbox" class="todo-toggle" data-id="${t.id}" ${t.status ? "checked" : ""} />
-          <span class="text-sm ${t.status ? "line-through opacity-60" : ""}">
+          <span class="todo-item-text ${t.status ? "is-done" : ""}">
             ${escapeHtml(t.data || "")}
           </span>
         </label>
-        <div class="flex items-center gap-2">
-          <button class="todo-edit px-2 py-1 text-xs border rounded" data-id="${t.id}">Modifier</button>
-          <button class="todo-delete px-2 py-1 text-xs border rounded" data-id="${t.id}">Supprimer</button>
+        <div class="todo-item-actions">
+          <button class="todo-edit" data-id="${t.id}">Modifier</button>
+          <button class="todo-delete" data-id="${t.id}">Supprimer</button>
         </div>
       `;
       listEl.appendChild(li);
     });
   } catch (err) {
     console.error("Failed to load todos:", err);
-    listEl.innerHTML = `<li class="py-2 text-sm text-red-600">Erreur de chargement des tâches.</li>`;
+    listEl.innerHTML = `<li class="todo-empty todo-empty--error">Erreur de chargement des tâches.</li>`;
   }
 }
 
