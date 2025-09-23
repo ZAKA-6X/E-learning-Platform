@@ -1,14 +1,18 @@
 // controllers/postsController.js
 const supabase = require("../config/db");
 
-
-/** Map friendly labels or raw values to the DB enum */
+/** Map friendly labels or raw values to the DB enum (SCHOOL | CLASS | SUBJECT) */
 function normalizeAudience(value) {
-  if (!value) return "school";
+  if (!value) return "SCHOOL";
   const v = String(value).toLowerCase().trim();
-  if (v === "all_classes" || v.includes("toute")) return "all_classes";
-  if (v === "class" || v.includes("ma classe")) return "class";
-  return "school";
+
+  // French-friendly mappings
+  if (v === "class" || v.includes("ma classe")) return "CLASS";
+  if (v === "subject" || v.includes("matiere") || v.includes("matière"))
+    return "SUBJECT";
+
+  // default
+  return "SCHOOL";
 }
 
 function detectMediaType(file) {
@@ -49,8 +53,7 @@ async function runWithRetry(requestFactory, attempts = 3, label = "supabase") {
         return result;
       }
       lastResult = result;
-      console.warn(
-        `[${label}] retry ${attempt} due to fetch failure`);
+      console.warn(`[${label}] retry ${attempt} due to fetch failure`);
     } catch (err) {
       if (!looksLikeFetchFailure(err)) throw err;
       lastResult = { error: err };
@@ -86,11 +89,7 @@ function normalizeVoteValue(raw) {
 
 async function recalcScore(table, keyColumn, keyValue) {
   const result = await runWithRetry(
-    () =>
-      supabase
-        .from(table)
-        .select("value")
-        .eq(keyColumn, keyValue),
+    () => supabase.from(table).select("value").eq(keyColumn, keyValue),
     3,
     `recalcScore.${table}`
   );
@@ -116,15 +115,21 @@ exports.addPost = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { title, body_html, audience } = req.body || {};
+    const { title, body_html } = req.body || {};
+    const audienceEnum = normalizeAudience(req.body?.audience); // SCHOOL | CLASS | SUBJECT
+
     if (!title || typeof title !== "string" || !title.trim()) {
       return res.status(400).json({ error: "title is required" });
     }
-    const audienceEnum = normalizeAudience(audience);
 
-    // Resolve class_id if needed
+    // Matrix:
+    // - SCHOOL  -> class_id=null, subject_id=null
+    // - CLASS   -> class_id=user.class_id, subject_id=null
+    // - SUBJECT -> subject_id=req.body.subject_id (validated), class_id=null
     let classId = null;
-    if (audienceEnum === "class") {
+    let subjectId = null;
+
+    if (audienceEnum === "CLASS") {
       const { data: userRow, error: userError } = await supabase
         .from("users")
         .select("class_id")
@@ -139,6 +144,35 @@ exports.addPost = async (req, res) => {
       if (!classId) {
         return res.status(400).json({ error: "User has no class assigned" });
       }
+      subjectId = null;
+    } else if (audienceEnum === "SUBJECT") {
+      const rawSubjectId = (req.body?.subject_id || "").trim();
+      if (!rawSubjectId) {
+        return res
+          .status(400)
+          .json({ error: "subject_id is required for SUBJECT audience" });
+      }
+
+      // Validate subject belongs to the same school
+      const { data: subj, error: subjErr } = await supabase
+        .from("subjects")
+        .select("id, school_id")
+        .eq("id", rawSubjectId)
+        .single();
+
+      if (subjErr || !subj || subj.school_id !== schoolId) {
+        console.error("[addPost] invalid subject for school", subjErr);
+        return res
+          .status(400)
+          .json({ error: "Invalid subject for this school" });
+      }
+
+      subjectId = rawSubjectId;
+      classId = null;
+    } else {
+      // SCHOOL
+      classId = null;
+      subjectId = null;
     }
 
     // 1) Insert the post
@@ -151,9 +185,9 @@ exports.addPost = async (req, res) => {
             user_id: userId,
             title,
             body_html: body_html || null,
-            audience: audienceEnum,
-            class_id: classId,
-            status: "published",
+            audience: audienceEnum, // SCHOOL | CLASS | SUBJECT
+            class_id: classId, // only for CLASS
+            subject_id: subjectId, // only for SUBJECT
           })
           .select("*")
           .single(),
@@ -166,7 +200,9 @@ exports.addPost = async (req, res) => {
 
     if (postError) {
       console.error("[addPost] insert post error", postError);
-      return res.status(400).json({ error: postError.message || "Insert failed" });
+      return res
+        .status(400)
+        .json({ error: postError.message || "Insert failed" });
     }
 
     // 2) Handle attachments
@@ -176,9 +212,10 @@ exports.addPost = async (req, res) => {
 
     for (const f of files) {
       try {
-
         const clean = sanitizeFilename(f.originalname || "file");
-        const key = `school/${schoolId}/user/${userId}/post/${post.id}/${Date.now()}-${clean}`;
+        const key = `school/${schoolId}/user/${userId}/post/${
+          post.id
+        }/${Date.now()}-${clean}`;
 
         const { error: upErr } = await supabase.storage
           .from(bucket)
@@ -194,7 +231,6 @@ exports.addPost = async (req, res) => {
 
         const { data: pub } = supabase.storage.from(bucket).getPublicUrl(key);
         const publicUrl = pub?.publicUrl;
-
 
         const { data: att, error: attErr } = await supabase
           .from("post_attachments")
@@ -240,10 +276,13 @@ exports.listPosts = async (req, res) => {
       body_html,
       audience,
       class_id,
-      status,
+      subject_id,
       created_at,
       updated_at,
       author:users!posts_user_id_fkey(id, first_name, last_name, email, role),
+      school:schools!posts_school_id_fkey(id, name),
+      class:classes!posts_class_id_fkey(id, name),
+      subject:subjects!posts_subject_id_fkey(id, name),
       post_attachments(id, url, filename, media_type, size_bytes, created_at)
     `;
 
@@ -252,7 +291,6 @@ exports.listPosts = async (req, res) => {
         .from("posts")
         .select(selectColumns)
         .eq("school_id", schoolId)
-        .eq("status", "published")
         .order("created_at", { ascending: false });
 
     const postsResult = await runWithRetry(
@@ -314,7 +352,8 @@ exports.listPosts = async (req, res) => {
 
       if (Array.isArray(userVotesRows)) {
         userVotesRows.forEach((row) => {
-          if (row?.post_id) userVoteByPost[row.post_id] = Number(row.value || 0);
+          if (row?.post_id)
+            userVoteByPost[row.post_id] = Number(row.value || 0);
         });
       }
 
@@ -341,15 +380,36 @@ exports.listPosts = async (req, res) => {
 
     const response = (postsData || []).map((post) => {
       const author = post.author || null;
+      const school = post.school || null;
+      const cls = post.class || null;
+      const subj = post.subject || null;
+
       return {
         id: post.id,
         title: post.title,
         body_html: post.body_html,
         audience: post.audience,
         class_id: post.class_id,
+        subject_id: post.subject_id,
         created_at: post.created_at,
         published_at: post.updated_at || null,
         author: formatUserIdentity(author),
+
+        // added for display
+        school: school ? { id: school.id, name: school.name } : null,
+        class:  cls ? { id: cls.id, name: cls.name } : null,
+        subject: subj ? { id: subj.id, name: subj.name } : null,
+
+        // ✅ NEW FIELD
+        audience_label:
+          post.audience === "SCHOOL"
+            ? (school?.name || "Mon école")
+            : post.audience === "CLASS"
+            ? (cls?.name || "Ma classe")
+            : post.audience === "SUBJECT"
+            ? (subj?.name || "Matière")
+            : "",
+
         attachments: Array.isArray(post.post_attachments)
           ? post.post_attachments
           : [],
@@ -358,6 +418,8 @@ exports.listPosts = async (req, res) => {
         comment_count: commentCountByPost[post.id] || 0,
       };
     });
+
+
 
     return res.json(response);
   } catch (err) {
@@ -377,7 +439,8 @@ exports.addComment = async (req, res) => {
 
     const textRaw = req.body?.body ?? req.body?.text ?? "";
     const text = String(textRaw).trim();
-    if (!text) return res.status(400).json({ error: "Comment text is required" });
+    if (!text)
+      return res.status(400).json({ error: "Comment text is required" });
 
     let parentId = req.body?.parent_id ?? null;
     if (parentId !== null && parentId !== undefined && parentId !== "") {
@@ -580,23 +643,23 @@ exports.votePost = async (req, res) => {
       const error = deleteResult.error;
       if (error && error.code !== "PGRST116") {
         console.error("[votePost] delete error", error);
-        return res.status(500).json({ error: error.message || "Delete failed" });
+        return res
+          .status(500)
+          .json({ error: error.message || "Delete failed" });
       }
     } else {
       const upsertResult = await runWithRetry(
         () =>
-          supabase
-            .from("post_votes")
-            .upsert(
-              [
-                {
-                  post_id: postId,
-                  user_id: userId,
-                  value,
-                },
-              ],
-              { onConflict: "post_id,user_id" }
-            ),
+          supabase.from("post_votes").upsert(
+            [
+              {
+                post_id: postId,
+                user_id: userId,
+                value,
+              },
+            ],
+            { onConflict: "post_id,user_id" }
+          ),
         3,
         "votePost.upsert"
       );
@@ -605,7 +668,9 @@ exports.votePost = async (req, res) => {
 
       if (error) {
         console.error("[votePost] upsert error", error);
-        return res.status(500).json({ error: error.message || "Upsert failed" });
+        return res
+          .status(500)
+          .json({ error: error.message || "Upsert failed" });
       }
     }
 
@@ -617,7 +682,9 @@ exports.votePost = async (req, res) => {
 
     if (scoreError) {
       console.error("[votePost] score error", scoreError);
-      return res.status(500).json({ error: scoreError.message || "Score failed" });
+      return res
+        .status(500)
+        .json({ error: scoreError.message || "Score failed" });
     }
 
     return res.json({
@@ -659,30 +726,32 @@ exports.voteComment = async (req, res) => {
       const error = deleteResult.error;
       if (error && error.code !== "PGRST116") {
         console.error("[voteComment] delete error", error);
-        return res.status(500).json({ error: error.message || "Delete failed" });
+        return res
+          .status(500)
+          .json({ error: error.message || "Delete failed" });
       }
     } else {
       const upsertResult = await runWithRetry(
         () =>
-          supabase
-            .from("post_comment_votes")
-            .upsert(
-              [
-                {
-                  comment_id: commentId,
-                  user_id: userId,
-                  value,
-                },
-              ],
-              { onConflict: "comment_id,user_id" }
-            ),
+          supabase.from("post_comment_votes").upsert(
+            [
+              {
+                comment_id: commentId,
+                user_id: userId,
+                value,
+              },
+            ],
+            { onConflict: "comment_id,user_id" }
+          ),
         3,
         "voteComment.upsert"
       );
       const error = upsertResult.error;
       if (error) {
         console.error("[voteComment] upsert error", error);
-        return res.status(500).json({ error: error.message || "Upsert failed" });
+        return res
+          .status(500)
+          .json({ error: error.message || "Upsert failed" });
       }
     }
 
@@ -694,7 +763,9 @@ exports.voteComment = async (req, res) => {
 
     if (scoreError) {
       console.error("[voteComment] score error", scoreError);
-      return res.status(500).json({ error: scoreError.message || "Score failed" });
+      return res
+        .status(500)
+        .json({ error: scoreError.message || "Score failed" });
     }
 
     return res.json({

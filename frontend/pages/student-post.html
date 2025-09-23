@@ -8,7 +8,13 @@
   </head>
   <body>
     <div id="post-composer-host" class="post-wrap">
-      <form class="post-card" id="post-form" method="post" action="/api/posts" enctype="multipart/form-data">
+      <form
+        class="post-card"
+        id="post-form"
+        method="post"
+        action="/api/posts"
+        enctype="multipart/form-data"
+      >
         <div class="post-body">
           <!-- Header -->
           <h1>Créer une publication</h1>
@@ -16,11 +22,16 @@
           <!-- Audience Select -->
           <div class="post-field">
             <label for="post-audience" class="post-label">Audience</label>
-            <select id="post-audience" required>
-              <option value="Mon école">Mon école</option>
-              <option value="Toute la classe">Toute la classe</option>
-              <option value="Ma classe">Ma classe</option>
+            <select id="post-audience" name="audience" required>
+              <option value="SCHOOL">Mon école</option>
+              <option value="CLASS">Ma classe</option>
+              <option value="SUBJECT">Matière</option>
             </select>
+          </div>
+
+          <div class="post-field" id="subject-field" hidden>
+            <label for="post-subject" class="post-label">Matière</label>
+            <select id="post-subject" name="subject_id"></select>
           </div>
 
           <!-- Title -->

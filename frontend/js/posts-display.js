@@ -1,5 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
   const feedEl = document.getElementById("feed");
+  // === Toolbar container (injected before #feed) ===
+  let toolbarEl = document.getElementById("feed-toolbar");
+  if (!toolbarEl && feedEl && feedEl.parentNode) {
+    toolbarEl = document.createElement("div");
+    toolbarEl.id = "feed-toolbar";
+    toolbarEl.style.display = "flex";
+    toolbarEl.style.flexWrap = "wrap";
+    toolbarEl.style.gap = "12px";
+    toolbarEl.style.alignItems = "center";
+    toolbarEl.style.margin = "0 0 12px 0";
+    feedEl.parentNode.insertBefore(toolbarEl, feedEl);
+  }
+
   if (!feedEl) return;
 
   const state = {
@@ -7,6 +20,10 @@ document.addEventListener("DOMContentLoaded", () => {
     comments: new Map(), // postId -> { items: Comment[] }
     view: "list", // or "detail"
     activePostId: null,
+    sortBy: "date", // "date" | "votes"
+    subjectFilterId: "", // "" = all subjects
+    subjects: [],
+    subjectsLoaded: false,
   };
 
   const toast = (message, type) => {
@@ -38,6 +55,95 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.textContent = message;
     feedEl.appendChild(msg);
   }
+
+  function getPostDate(post) {
+    return new Date(post.created_at || post.published_at || 0).getTime();
+  }
+
+  function applyFilterAndSort(posts) {
+    let rows = Array.isArray(posts) ? posts.slice() : [];
+
+    // Filter by subject
+    if (state.subjectFilterId) {
+      rows = rows.filter((p) => {
+        // backend returns both `subject_id` and expanded `subject?.id`
+        const sid = p.subject_id || p.subject?.id || "";
+        return String(sid) === String(state.subjectFilterId);
+      });
+    }
+
+    // Sort
+    rows.sort((a, b) => {
+      if (state.sortBy === "votes") {
+        const av = Number(a.score || 0);
+        const bv = Number(b.score || 0);
+        return bv - av; // always highest votes first
+      }
+      // default: date
+      const ad = getPostDate(a);
+      const bd = getPostDate(b);
+      return bd - ad; // always newest first
+    });
+
+    return rows;
+  }
+
+  async function ensureSubjectsLoaded() {
+    if (state.subjectsLoaded) return;
+    try {
+      const res = await authedFetch("/subjects/mine");
+      const json = await res.json().catch(() => ({}));
+      state.subjects = Array.isArray(json?.items) ? json.items : [];
+      state.subjectsLoaded = true;
+    } catch (e) {
+      console.warn("[posts-display] /subjects/mine failed", e);
+      state.subjects = [];
+      state.subjectsLoaded = true;
+    }
+  }
+
+function buildToolbar() {
+  if (!toolbarEl) return;
+
+  toolbarEl.innerHTML = "";
+
+  // --- Sort By (always descending) ---
+  const sortBy = document.createElement("select");
+  sortBy.title = "Trier par";
+  sortBy.innerHTML = `
+    <option value="date">Trier par : Date</option>
+    <option value="votes">Trier par : Votes</option>
+  `;
+  sortBy.value = state.sortBy;
+
+  // --- Subject Filter ---
+  const subj = document.createElement("select");
+  subj.title = "Filtrer par matière";
+  const opts = [
+    `<option value="">Toutes les matières</option>`,
+    ...state.subjects.map(
+      (s) =>
+        `<option value="${s.id}">${s.name || s.code || "Matière"}</option>`
+    ),
+  ];
+  subj.innerHTML = opts.join("");
+  subj.value = state.subjectFilterId;
+
+  // Wire events
+  sortBy.addEventListener("change", () => {
+    state.sortBy = sortBy.value;
+    renderFeed(); // re-render with new sort
+  });
+  subj.addEventListener("change", () => {
+    state.subjectFilterId = subj.value;
+    renderFeed();
+  });
+
+  // Layout
+  toolbarEl.appendChild(sortBy);
+  toolbarEl.appendChild(subj);
+}
+
 
   let lightbox = null;
   let lightboxImg = null;
@@ -240,6 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function createPostVoteControls(post) {
     const wrap = document.createElement("div");
     wrap.className = "vote-controls";
+    wrap.addEventListener("click", (e) => e.stopPropagation());
 
     const upBtn = document.createElement("button");
     upBtn.type = "button";
@@ -260,8 +367,16 @@ document.addEventListener("DOMContentLoaded", () => {
     applyVoteStyles(post.user_vote || 0, upBtn, downBtn);
 
     const controls = { upBtn, downBtn, score };
-    upBtn.addEventListener("click", () => handlePostVote(post, 1, controls));
-    downBtn.addEventListener("click", () => handlePostVote(post, -1, controls));
+    upBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handlePostVote(post, 1, controls);
+    });
+    downBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handlePostVote(post, -1, controls);
+    });
 
     wrap.appendChild(upBtn);
     wrap.appendChild(score);
@@ -454,13 +569,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    section.innerHTML = "<div class=\"muted\">Chargement des commentaires…</div>";
+    section.innerHTML = '<div class="muted">Chargement des commentaires…</div>';
     try {
       const res = await authedFetch(`/api/posts/${post.id}/comments`);
       const data = await res.json().catch(() => []);
       if (!res.ok) {
         console.error("listComments error", data);
-        section.innerHTML = "<div class=\"muted\">Chargement impossible.</div>";
+        section.innerHTML = '<div class="muted">Chargement impossible.</div>';
         return;
       }
       const items = Array.isArray(data) ? data : [];
@@ -470,7 +585,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderComments(section, post);
     } catch (err) {
       console.error("ensureCommentsLoaded", err);
-      section.innerHTML = "<div class=\"muted\">Erreur réseau.</div>";
+      section.innerHTML = '<div class="muted">Erreur réseau.</div>';
     }
   }
 
@@ -526,7 +641,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const audience = document.createElement("span");
     audience.className = "post-audience";
-    audience.textContent = audienceLabel(post.audience);
+    audience.textContent = post.audience_label || audienceLabel(post.audience);
     meta.appendChild(audience);
 
     card.appendChild(meta);
@@ -573,7 +688,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderFeed() {
     feedEl.innerHTML = "";
 
-    const posts = Array.isArray(state.posts) ? state.posts : [];
+    const all = Array.isArray(state.posts) ? state.posts : [];
+    const posts = applyFilterAndSort(all);
     if (!posts.length) {
       showMessage("Aucune publication pour le moment.");
       return;
@@ -582,6 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state.view === "detail") {
       const active = posts.find((p) => p.id === state.activePostId);
       if (!active) {
+        // If the active post got filtered out, go back to list
         state.view = "list";
         state.activePostId = null;
         renderFeed();
@@ -634,6 +751,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       const data = await res.json();
       state.posts = Array.isArray(data) ? data : [];
+      await ensureSubjectsLoaded();
+      buildToolbar();
       renderFeed();
     } catch (err) {
       console.error("loadPosts error", err);

@@ -141,8 +141,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
 
-      // PDF media UX (multi-file chips) — styled to match your CSS
+      // PDF/media UX (multi-file chips)
       setupFileMediaUI(form);
+
+      // Audience -> Subject toggle (now fetches /subjects/mine)
+      setupAudienceSubjectToggle(form);
+
       // Submit → backend for this fresh form
       wireSubmit(form);
     });
@@ -153,6 +157,76 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!host) return;
     host.innerHTML = ""; // discard current draft entirely
     setPublicationsContentVisible(true);
+  }
+
+  // ---------- Audience / Subject toggle ----------
+  function setupAudienceSubjectToggle(form) {
+    const audienceSelect = qs("#post-audience", form);
+    const subjectField = qs("#subject-field", form);
+    const subjectSelect = qs("#post-subject", form);
+
+    if (!audienceSelect || !subjectField) return;
+
+    // Lazy-fetch subjects from /subjects/mine once
+    let subjectsLoaded = false;
+    async function ensureSubjectsLoaded() {
+      if (subjectsLoaded || !subjectSelect) return;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/subjects/mine", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const json = await res.json(); // { items: [...] }
+        const items = Array.isArray(json?.items) ? json.items : [];
+
+        subjectSelect.innerHTML = "";
+
+        // Placeholder option
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "-- Choisir une matière --";
+          placeholder.disabled = true;
+          placeholder.selected = true;
+          subjectSelect.appendChild(placeholder);
+
+        if (!items.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "Aucune matière";
+          subjectSelect.appendChild(opt);
+        } else {
+          items.forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = s.name || s.code || `Matière #${s.id}`;
+            subjectSelect.appendChild(opt);
+          });
+        }
+
+        subjectsLoaded = true;
+      } catch (e) {
+        console.warn("[posts.js] Could not load subjects from /subjects/mine:", e);
+        if (subjectSelect && !subjectSelect.children.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "Aucune matière";
+          subjectSelect.appendChild(opt);
+        }
+      }
+    }
+
+    const apply = async () => {
+      const isSubject = audienceSelect.value === "SUBJECT";
+      subjectField.hidden = !isSubject;
+      if (isSubject) await ensureSubjectsLoaded();
+    };
+
+    // Initial state
+    apply();
+
+    // On change
+    on(audienceSelect, "change", apply);
   }
 
   // ---------- File media UX (multi-file, any type, click zone, drag-drop) ----------
@@ -211,21 +285,18 @@ document.addEventListener("DOMContentLoaded", () => {
     controls.appendChild(clearAll);
     zone.parentNode.insertBefore(controls, zone.nextSibling);
 
-    // Liste des fichiers (on réutilise tes styles .pdf-list / .pdf-chip pour garder le thème)
+    // Liste des fichiers (on réutilise tes styles .pdf-list / .pdf-chip)
     const list = document.createElement("div");
-    list.className = "pdf-list"; // style existant
+    list.className = "pdf-list";
     list.style.display = "none";
     controls.parentNode.insertBefore(list, controls.nextSibling);
 
-    // État interne — la source de vérité des fichiers sélectionnés
+    // État interne
     let dt = new DataTransfer();
-    // Exposer au form pour l'utiliser ailleurs
     form._getSelectedFiles = () => Array.from(dt.files);
 
-    // Remettre la zone à zéro (utilisé après upload, cancel et "Supprimer tout")
     function clearFiles() {
       dt = new DataTransfer();
-      // Some browsers treat input.files as readonly – ignore if so
       try {
         input.files = dt.files;
       } catch (_) {}
@@ -292,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         Array.from(dt.files).forEach((file, idx) => {
           const row = document.createElement("div");
-          row.className = "pdf-chip"; // style existant
+          row.className = "pdf-chip";
 
           const icon = document.createElement("span");
           icon.className = "pdf-ico";
@@ -421,19 +492,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const mediaEl = $("#post-media", form);
     const cancelBtn = $("#cancel-btn", form);
     const submitBtn = $("#submit-btn", form);
+    const subjectSelect = $("#post-subject", form);
 
-    function mapAudience(label) {
-      switch (label) {
-        case "Mon école":
-          return "school";
-        case "Toute la classe":
-          return "all_classes";
-        case "Ma classe":
-          return "class";
+    // Map the SELECT values (SCHOOL | CLASS | SUBJECT) to backend enums
+    function mapAudience(value) {
+      switch (value) {
+        case "SCHOOL":
+          return "SCHOOL";
+        case "CLASS":
+          return "CLASS";
+        case "SUBJECT":
+          return "SUBJECT";
         default:
-          return "school";
+          return "SCHOOL";
       }
     }
+
+
     function busy(isBusy) {
       if (!submitBtn) return;
       submitBtn.disabled = !!isBusy;
@@ -449,12 +524,18 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const title = (titleEl?.value || "").trim();
-      const audienceLabel = audienceEl?.value || "Mon école";
-      const audience = mapAudience(audienceLabel);
+      const audienceValue = audienceEl?.value || "SCHOOL";
+      const audience = mapAudience(audienceValue);
       const body_html = bodyEl?.innerHTML?.trim() || "";
+      const subject_id =
+        audienceValue === "SUBJECT" ? (subjectSelect?.value || "").trim() : "";
 
       if (!title) {
         toast("Le titre est requis.", "error");
+        return;
+      }
+      if (audienceValue === "SUBJECT" && !subject_id) {
+        toast("Veuillez choisir une matière.", "error");
         return;
       }
 
@@ -463,6 +544,7 @@ document.addEventListener("DOMContentLoaded", () => {
       fd.append("title", title);
       fd.append("audience", audience);
       fd.append("body_html", body_html);
+      if (audienceValue === "SUBJECT") fd.append("subject_id", subject_id);
 
       // Fichiers sélectionnés : utiliser la DataTransfer exposée par setupFileMediaUI
       const picked =
@@ -539,8 +621,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Standalone template usage (if you open student-post.html directly)
     var standaloneForm = qs("form.post-card");
     if (standaloneForm && !createBtn) {
-      setupEditorImageUI(document);
-      setupFileMediaUI(standaloneForm); // fix: pass the right form
+      setupFileMediaUI(standaloneForm);
+      setupAudienceSubjectToggle(standaloneForm);
       wireSubmit(standaloneForm);
     }
   }
