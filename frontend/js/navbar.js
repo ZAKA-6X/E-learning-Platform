@@ -65,6 +65,120 @@
     });
   }
 
+  function removeStorageKey(storage, key) {
+    try {
+      storage?.removeItem?.(key);
+    } catch {}
+  }
+
+  function performLogout() {
+    const keys = ['token', 'user', 'user_profile_name'];
+    keys.forEach((key) => {
+      removeStorageKey(localStorage, key);
+      removeStorageKey(sessionStorage, key);
+    });
+
+    try {
+      Object.keys(localStorage || {})
+        .filter((key) => key.startsWith(`${STORAGE_NS}:last:`))
+        .forEach((key) => removeStorageKey(localStorage, key));
+    } catch {}
+
+    window.location.href = '/pages/login.html';
+  }
+
+  function initUserMenus() {
+    const menus = document.querySelectorAll('[data-user-menu]');
+    if (!menus.length) return;
+
+    let openState = null;
+
+    const closeActiveMenu = (focusTrigger = false) => {
+      if (!openState) return;
+      const { panel, trigger } = openState;
+      panel.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+      if (focusTrigger) {
+        trigger.focus({ preventScroll: true });
+      }
+      openState = null;
+      document.removeEventListener('click', handleDocumentClick);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+
+    const handleDocumentClick = (event) => {
+      if (!openState) return;
+      if (openState.menu.contains(event.target)) return;
+      closeActiveMenu();
+    };
+
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeActiveMenu(true);
+      }
+    };
+
+    menus.forEach((menu) => {
+      const trigger = menu.querySelector('[data-user-menu-toggle]');
+      const panel = menu.querySelector('[data-user-menu-panel]');
+      if (!trigger || !panel) return;
+
+      const openMenu = () => {
+        if (!panel.hidden && openState?.menu === menu) return;
+        closeActiveMenu();
+        panel.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+        const firstItem = panel.querySelector('.user-menu-item');
+        if (firstItem) {
+          firstItem.focus({ preventScroll: true });
+        }
+        openState = { menu, trigger, panel };
+        document.addEventListener('click', handleDocumentClick);
+        document.addEventListener('keydown', handleEscapeKey);
+      };
+
+      const toggleMenu = (event) => {
+        event.preventDefault();
+        if (panel.hidden) {
+          openMenu();
+        } else {
+          closeActiveMenu();
+        }
+      };
+
+      trigger.addEventListener('click', toggleMenu);
+      trigger.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown' && panel.hidden) {
+          event.preventDefault();
+          openMenu();
+        }
+      });
+
+      panel.addEventListener('click', (event) => {
+        const actionEl = event.target.closest('[data-action]');
+        if (!actionEl) return;
+        event.preventDefault();
+        closeActiveMenu();
+
+        const action = (actionEl.dataset.action || '').toLowerCase();
+        if (action === 'profile') {
+          const profileUrl = menu.dataset.profileUrl || '/pages/profile.html';
+          window.location.href = profileUrl;
+        } else if (action === 'logout') {
+          performLogout();
+        }
+      });
+
+      panel.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeActiveMenu(true);
+        }
+      });
+    });
+  }
+
   function findBestSectionId(contentRoot, guessId) {
     if (!guessId) return null;
     // exact
@@ -295,6 +409,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     applyAvatarInitial();
+    initUserMenus();
     const scopes = document.querySelectorAll('[data-dashboard-scope]');
     if (scopes.length) {
       scopes.forEach(initScope);

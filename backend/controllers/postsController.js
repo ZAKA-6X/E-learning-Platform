@@ -778,3 +778,146 @@ exports.voteComment = async (req, res) => {
     return res.status(500).json({ error: err?.message || "Server error" });
   }
 };
+
+exports.deletePost = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const schoolId = req.user?.school_id;
+    const postId = Number(req.params.postId);
+
+    if (!userId || !schoolId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!Number.isInteger(postId) || postId <= 0) {
+      return res.status(400).json({ error: "Invalid post id" });
+    }
+
+    const lookupResult = await runWithRetry(
+      () =>
+        supabase
+          .from("posts")
+          .select("id")
+          .eq("id", postId)
+          .eq("user_id", userId)
+          .eq("school_id", schoolId)
+          .single(),
+      3,
+      "deletePost.lookup"
+    );
+
+    const lookupError = lookupResult.error;
+
+    if (lookupError) {
+      if (lookupError.code === "PGRST116") {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      console.error("[deletePost] lookup error", lookupError);
+      return res
+        .status(500)
+        .json({ error: lookupError.message || "Lookup failed" });
+    }
+
+    if (!lookupResult.data) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const deleteResult = await runWithRetry(
+      () =>
+        supabase
+          .from("posts")
+          .delete()
+          .eq("id", postId)
+          .eq("user_id", userId)
+          .eq("school_id", schoolId),
+      3,
+      "deletePost.delete"
+    );
+
+    const deleteError = deleteResult.error;
+    if (deleteError) {
+      console.error("[deletePost] delete error", deleteError);
+      return res
+        .status(500)
+        .json({ error: deleteError.message || "Delete failed" });
+    }
+
+    return res.status(204).send();
+  } catch (err) {
+    console.error("[deletePost] exception", err);
+    return res.status(500).json({ error: err?.message || "Server error" });
+  }
+};
+
+exports.deleteComment = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const postId = Number(req.params.postId);
+    const commentId = Number(req.params.commentId);
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!Number.isInteger(postId) || postId <= 0) {
+      return res.status(400).json({ error: "Invalid post id" });
+    }
+
+    if (!Number.isInteger(commentId) || commentId <= 0) {
+      return res.status(400).json({ error: "Invalid comment id" });
+    }
+
+    const lookupResult = await runWithRetry(
+      () =>
+        supabase
+          .from("post_comments")
+          .select("id")
+          .eq("id", commentId)
+          .eq("post_id", postId)
+          .eq("user_id", userId)
+          .single(),
+      3,
+      "deleteComment.lookup"
+    );
+
+    const lookupError = lookupResult.error;
+    if (lookupError) {
+      if (lookupError.code === "PGRST116") {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      console.error("[deleteComment] lookup error", lookupError);
+      return res
+        .status(500)
+        .json({ error: lookupError.message || "Lookup failed" });
+    }
+
+    if (!lookupResult.data) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    const deleteResult = await runWithRetry(
+      () =>
+        supabase
+          .from("post_comments")
+          .delete()
+          .eq("id", commentId)
+          .eq("post_id", postId)
+          .eq("user_id", userId),
+      3,
+      "deleteComment.delete"
+    );
+
+    const deleteError = deleteResult.error;
+    if (deleteError) {
+      console.error("[deleteComment] delete error", deleteError);
+      return res
+        .status(500)
+        .json({ error: deleteError.message || "Delete failed" });
+    }
+
+    return res.status(204).send();
+  } catch (err) {
+    console.error("[deleteComment] exception", err);
+    return res.status(500).json({ error: err?.message || "Server error" });
+  }
+};

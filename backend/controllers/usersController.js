@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const supabase = require('../config/db');
+const supabase = require("../config/db");
 
 function cleanProfile(row) {
   if (!row) return null;
@@ -30,7 +30,7 @@ function cleanProfile(row) {
 
   profile.full_name = [profile.first_name, profile.last_name]
     .filter(Boolean)
-    .join(' ')
+    .join(" ")
     .trim();
 
   if (!profile.full_name) profile.full_name = null;
@@ -40,32 +40,32 @@ function cleanProfile(row) {
 
 exports.getProfile = async (req, res) => {
   const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const { data, error } = await supabase
-      .from('users')
+      .from("users")
       .select(
         `id,email,phone,first_name,last_name,role,status,created_at,last_login_at,
          school:schools(id,name),
-         class:classes(id,name,room)`
+         class:classes(id,name)`
       )
-      .eq('id', userId)
+      .eq("id", userId)
       .single();
 
     if (error) {
-      console.error('[usersController] getProfile', error);
-      return res.status(500).json({ error: error.message || 'Supabase error' });
+      console.error("[usersController] getProfile", error);
+      return res.status(500).json({ error: error.message || "Supabase error" });
     }
 
     const profile = cleanProfile(data);
     if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
+      return res.status(404).json({ error: "Profile not found" });
     }
 
     return res.json({ profile });
   } catch (err) {
-    console.error('[usersController] getProfile', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("[usersController] getProfile", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };

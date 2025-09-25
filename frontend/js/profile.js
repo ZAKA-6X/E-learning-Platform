@@ -23,7 +23,6 @@
     school: document.getElementById('profile-school'),
     className: document.getElementById('profile-class'),
     status: document.getElementById('profile-status'),
-    lastLogin: document.getElementById('profile-last-login'),
     created: document.getElementById('profile-created'),
     homeLink: document.getElementById('profile-home-link'),
     backLink: document.getElementById('profile-back'),
@@ -97,7 +96,6 @@
     setText(el.status, formatStatus(profile.status));
     setText(el.school, schoolName);
     setText(el.className, className);
-    setText(el.lastLogin, formatDate(profile.last_login_at));
     setText(el.created, formatDate(profile.created_at));
     setText(el.roleBadge, roleLabel);
 

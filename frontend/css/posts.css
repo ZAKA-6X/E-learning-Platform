@@ -587,6 +587,32 @@
 .post-back-btn:hover {
   color: var(--primary-ink);
 }
+.post-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.post-header-actions .post-back-btn {
+  margin-bottom: 0;
+}
+.post-delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--bad);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.post-delete-btn:hover,
+.post-delete-btn:focus-visible {
+  background: rgba(224, 67, 67, 0.12);
+  color: var(--bad);
+  outline: none;
+}
 .post-meta {
   display: flex;
   flex-wrap: wrap;
@@ -628,6 +654,25 @@
   border-radius: 12px;
   display: block;
 }
+.post-attachments .attachment--video {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.post-attachments .attachment--video video {
+  width: 100%;
+  border-radius: 12px;
+  display: block;
+  background: #000;
+}
+.post-attachments .attachment--video:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+.attachment-caption {
+  font-size: 13px;
+  color: var(--muted);
+}
 .post-attachments .attachment--audio {
   display: flex;
   flex-direction: column;
@@ -655,6 +700,22 @@
 }
 .post-attachments .attachment--link:hover {
   text-decoration: underline;
+}
+.post-attachments .attachment--viewer {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(93, 95, 239, 0.12);
+  color: var(--primary-ink);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.post-attachments .attachment--viewer:hover,
+.post-attachments .attachment--viewer:focus-visible {
+  background: rgba(93, 95, 239, 0.2);
+  outline: none;
 }
 
 .post-actions {
@@ -740,6 +801,11 @@
   align-items: center;
   gap: 8px;
 }
+.comment-meta-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
 .comment-author-role {
   padding: 3px 8px;
   border-radius: 999px;
@@ -749,6 +815,22 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+.comment-delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--bad);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.comment-delete-btn:hover,
+.comment-delete-btn:focus-visible {
+  background: rgba(224, 67, 67, 0.12);
+  color: var(--bad);
+  outline: none;
 }
 .comment-body {
   color: var(--ink);

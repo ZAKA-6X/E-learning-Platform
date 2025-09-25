@@ -42,6 +42,10 @@
     toastEl.appendChild(closeBtn);
     container.appendChild(toastEl);
 
+    requestAnimationFrame(() => {
+      toastEl.classList.add('toast-show');
+    });
+
     if (duration > 0) {
       setTimeout(removeToast, duration);
     }

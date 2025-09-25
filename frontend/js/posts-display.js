@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     subjectFilterId: "", // "" = all subjects
     subjects: [],
     subjectsLoaded: false,
+    currentUserId: undefined,
   };
 
   const toast = (message, type) => {
@@ -48,12 +49,176 @@ document.addEventListener("DOMContentLoaded", () => {
     return fetch(url, { ...options, headers });
   }
 
+  function getCurrentUserId() {
+    if (state.currentUserId !== undefined) {
+      return state.currentUserId;
+    }
+
+    let userId = null;
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.id) {
+          userId = String(parsed.id);
+        }
+      }
+    } catch (err) {
+      console.warn("[posts-display] unable to parse current user", err);
+    }
+
+    state.currentUserId = userId;
+    return userId;
+  }
+
+  function isOwnPost(post) {
+    const currentId = getCurrentUserId();
+    if (!currentId) return false;
+    const authorId = post?.author?.id ? String(post.author.id) : null;
+    return authorId && authorId === currentId;
+  }
+
+  function isOwnComment(comment) {
+    const currentId = getCurrentUserId();
+    if (!currentId) return false;
+    const authorId = comment?.author?.id ? String(comment.author.id) : null;
+    return authorId && authorId === currentId;
+  }
+
+  async function handleDeletePost(post) {
+    if (!post?.id) return;
+
+    let confirmed = true;
+    if (window.notify?.confirm) {
+      confirmed = await window.notify.confirm({
+        title: "Supprimer la publication",
+        message: "Êtes-vous sûr de vouloir supprimer cette publication ?",
+        confirmText: "Supprimer",
+        cancelText: "Annuler",
+      });
+    } else if (!window.confirm("Supprimer cette publication ?")) {
+      confirmed = false;
+    }
+
+    if (!confirmed) return;
+
+    try {
+      const res = await authedFetch(`/api/posts/${post.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast(body?.error || "Impossible de supprimer la publication.", "error");
+        return;
+      }
+
+      state.posts = state.posts.filter((p) => p.id !== post.id);
+      state.comments.delete(post.id);
+      state.view = "list";
+      state.activePostId = null;
+      renderFeed();
+      toast("Publication supprimée.", "success");
+    } catch (err) {
+      if (err?.message === "AUTH_MISSING") {
+        toast("Session expirée. Veuillez vous reconnecter.", "error");
+        return;
+      }
+      console.error("[posts-display] delete post failed", err);
+      toast("Impossible de supprimer la publication.", "error");
+    }
+  }
+
+  async function handleDeleteComment(postId, comment) {
+    if (!postId || !comment?.id) return;
+    let confirmed = true;
+    if (window.notify?.confirm) {
+      confirmed = await window.notify.confirm({
+        title: "Supprimer le commentaire",
+        message: "Êtes-vous sûr de vouloir supprimer ce commentaire ?",
+        confirmText: "Supprimer",
+        cancelText: "Annuler",
+      });
+    } else if (!window.confirm("Supprimer ce commentaire ?")) {
+      confirmed = false;
+    }
+    if (!confirmed) return;
+
+    try {
+      const res = await authedFetch(
+        `/api/posts/${postId}/comments/${comment.id}`,
+        { method: "DELETE" }
+      );
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast(body?.error || "Impossible de supprimer le commentaire.", "error");
+        return;
+      }
+
+      const entry = state.comments.get(postId);
+      if (entry && Array.isArray(entry.items)) {
+        entry.items = entry.items.filter((item) => item.id !== comment.id);
+        state.comments.set(postId, entry);
+      }
+
+      const post = state.posts.find((p) => p.id === postId);
+      if (post) {
+        post.comment_count = Math.max(0, (post.comment_count || 0) - 1);
+        updateCommentCountDisplay(post);
+      }
+
+      renderFeed();
+      toast("Commentaire supprimé.", "success");
+    } catch (err) {
+      if (err?.message === "AUTH_MISSING") {
+        toast("Session expirée. Veuillez vous reconnecter.", "error");
+        return;
+      }
+      console.error("[posts-display] delete comment failed", err);
+      toast("Impossible de supprimer le commentaire.", "error");
+    }
+  }
+
   function showMessage(message) {
     feedEl.innerHTML = "";
     const msg = document.createElement("div");
     msg.className = "muted";
     msg.textContent = message;
     feedEl.appendChild(msg);
+  }
+
+  function openPostMedia(att, post) {
+    if (!att || !att.url) return;
+
+    const toAbsolute = (value) => {
+      try {
+        return new URL(value, window.location.origin).toString();
+      } catch (err) {
+        return `${window.location.origin}${value.startsWith("/") ? "" : "/"}${value}`;
+      }
+    };
+
+    const absolute = toAbsolute(att.url);
+    const bodyText = post?.body_html ? stripHtml(post.body_html) : "";
+    const summary = bodyText.length > 400 ? `${bodyText.slice(0, 400).trim()}…` : bodyText;
+
+    const params = new URLSearchParams({
+      file: absolute,
+      kind: att.media_type || "document",
+      title: post?.title || att.filename || "Document",
+      author: post?.author?.name || "",
+      audience: post?.audience_label || "",
+      updated: post?.created_at || "",
+      description: summary,
+      filename: att.filename || "",
+    });
+    const readerUrl = `/pages/media-reader.html?${params.toString()}`;
+    window.open(readerUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function stripHtml(html) {
+    if (!html) return "";
+    const temp = document.createElement("div");
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || "";
   }
 
   function getPostDate(post) {
@@ -110,6 +275,7 @@ function buildToolbar() {
   // --- Sort By (always descending) ---
   const sortBy = document.createElement("select");
   sortBy.title = "Trier par";
+  sortBy.dataset.role = "sort";
   sortBy.innerHTML = `
     <option value="date">Trier par : Date</option>
     <option value="votes">Trier par : Votes</option>
@@ -119,6 +285,7 @@ function buildToolbar() {
   // --- Subject Filter ---
   const subj = document.createElement("select");
   subj.title = "Filtrer par matière";
+  subj.dataset.role = "subject";
   const opts = [
     `<option value="">Toutes les matières</option>`,
     ...state.subjects.map(
@@ -252,7 +419,7 @@ function buildToolbar() {
     }
   }
 
-  function renderAttachments(container, attachments) {
+  function renderAttachments(container, attachments, post) {
     const list = document.createElement("div");
     list.className = "post-attachments";
 
@@ -261,10 +428,24 @@ function buildToolbar() {
       const type = (att.media_type || "").toLowerCase();
       const url = String(att.url);
       const filename = att.filename || "";
+
+      const getExt = (value) => {
+        if (!value) return "";
+        const cleaned = value.split("?")[0].split("#")[0] || "";
+        const parts = cleaned.split(".");
+        return parts.length > 1 ? parts.pop().toLowerCase() : "";
+      };
+
+      const urlExt = getExt(url);
+      const nameExt = getExt(filename);
+
       const isAudio =
         type === "audio" ||
-        /\.(mp3|wav|ogg|m4a|aac)$/i.test(filename) ||
-        /\.(mp3|wav|ogg|m4a|aac)(?:\?.*)?$/i.test(url);
+        [urlExt, nameExt].some((ext) => ["mp3", "wav", "ogg", "m4a", "aac"].includes(ext));
+
+      const isVideo =
+        type === "video" ||
+        [urlExt, nameExt].some((ext) => ["mp4", "m4v", "webm", "mov"].includes(ext));
 
       if (type === "image") {
         const figure = document.createElement("figure");
@@ -294,6 +475,65 @@ function buildToolbar() {
         wrapper.appendChild(label);
         wrapper.appendChild(player);
         list.appendChild(wrapper);
+        return;
+      }
+
+      if (isVideo) {
+        const figure = document.createElement("figure");
+        figure.className = "attachment attachment--video";
+        figure.tabIndex = 0;
+
+        const video = document.createElement("video");
+        video.src = att.url;
+        video.controls = true;
+        video.preload = "metadata";
+        video.tabIndex = -1;
+        video.setAttribute("playsinline", "");
+
+        const caption = document.createElement("figcaption");
+        caption.className = "attachment-caption";
+        caption.textContent = filename || "Vidéo";
+
+        figure.appendChild(video);
+        if (filename) figure.appendChild(caption);
+
+        const focusVideo = () => {
+          try {
+            video.focus({ preventScroll: true });
+          } catch {
+            video.focus();
+          }
+        };
+
+        figure.addEventListener("click", (e) => {
+          e.stopPropagation();
+          focusVideo();
+        });
+
+        figure.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            focusVideo();
+          }
+        });
+
+        list.appendChild(figure);
+        return;
+      }
+
+      const isPdf = [urlExt, nameExt].some((ext) => ext === "pdf");
+
+      if (isPdf) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "attachment attachment--viewer";
+        button.textContent = filename || "Document";
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openPostMedia(att, post);
+        });
+        list.appendChild(button);
         return;
       }
 
@@ -457,11 +697,6 @@ function buildToolbar() {
     author.className = "comment-author";
     author.textContent = comment.author?.name || "Utilisateur";
 
-    const date = document.createElement("time");
-    date.className = "comment-date";
-    date.dateTime = comment.created_at || "";
-    date.textContent = formatDate(comment.created_at);
-
     metaLeft.appendChild(author);
     const role = roleLabel(comment.author?.role);
     if (role) {
@@ -471,8 +706,30 @@ function buildToolbar() {
       metaLeft.appendChild(badge);
     }
 
+    const metaRight = document.createElement("div");
+    metaRight.className = "comment-meta-right";
+
+    const date = document.createElement("time");
+    date.className = "comment-date";
+    date.dateTime = comment.created_at || "";
+    date.textContent = formatDate(comment.created_at);
+    metaRight.appendChild(date);
+
+    if (isOwnComment(comment)) {
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "comment-delete-btn";
+      deleteBtn.textContent = "Supprimer";
+      deleteBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        handleDeleteComment(postId, comment);
+      });
+      metaRight.appendChild(deleteBtn);
+    }
+
     meta.appendChild(metaLeft);
-    meta.appendChild(date);
+    meta.appendChild(metaRight);
 
     const body = document.createElement("div");
     body.className = "comment-body";
@@ -596,16 +853,35 @@ function buildToolbar() {
     card.dataset.postId = post.id;
 
     if (showBack) {
+      const headerActions = document.createElement("div");
+      headerActions.className = "post-header-actions";
+
       const backBtn = document.createElement("button");
       backBtn.type = "button";
       backBtn.className = "post-back-btn";
       backBtn.textContent = "← Retour aux publications";
-      backBtn.addEventListener("click", () => {
+      backBtn.addEventListener("click", (event) => {
+        event.preventDefault();
         state.view = "list";
         state.activePostId = null;
         renderFeed();
       });
-      card.appendChild(backBtn);
+      headerActions.appendChild(backBtn);
+
+      if (isOwnPost(post)) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "post-delete-btn";
+        deleteBtn.textContent = "Supprimer";
+        deleteBtn.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          handleDeletePost(post);
+        });
+        headerActions.appendChild(deleteBtn);
+      }
+
+      card.appendChild(headerActions);
     }
 
     if (post.title) {
@@ -654,7 +930,7 @@ function buildToolbar() {
     }
 
     if (Array.isArray(post.attachments) && post.attachments.length) {
-      renderAttachments(card, post.attachments);
+      renderAttachments(card, post.attachments, post);
     }
 
     const actions = document.createElement("div");
@@ -763,6 +1039,16 @@ function buildToolbar() {
   loadPosts();
 
   document.addEventListener("post:created", () => {
+    state.sortBy = "date";
+    state.subjectFilterId = "";
+    state.view = "list";
+    state.activePostId = null;
+
+    const sortSelect = toolbarEl?.querySelector('select[data-role="sort"]');
+    if (sortSelect) sortSelect.value = "date";
+    const subjectSelect = toolbarEl?.querySelector('select[data-role="subject"]');
+    if (subjectSelect) subjectSelect.value = "";
+
     loadPosts(false);
   });
 });

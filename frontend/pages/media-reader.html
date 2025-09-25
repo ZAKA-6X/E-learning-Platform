@@ -19,10 +19,10 @@
         <button class="mobile-nav-toggle" type="button" aria-hidden="true" tabindex="-1">
           <i class="fa-solid fa-bars" aria-hidden="true"></i>
         </button>
-        <div class="logo">
+        <a class="logo" id="profile-home-link" href="student-dashboard.html">
           <img src="../assets/logo.png" alt="Logo ClicaEd" />
           <span>ClicaEd</span>
-        </div>
+        </a>
       </div>
       <div class="search-bar media-nav-spacer" aria-hidden="true"></div>
       <div class="user-menu">
@@ -41,18 +41,6 @@
             <p>Chargement du média…</p>
           </div>
         </div>
-
-        <section class="media-card media-description" id="media-description-block" hidden>
-          <h2>À propos de cette ressource</h2>
-          <p id="media-description"></p>
-        </section>
-
-        <section class="media-card media-fallback" id="media-fallback" hidden>
-          <h2>Impossible d'afficher le média</h2>
-          <p>
-            Le média ne peut pas être prévisualisé ici. Utilisez le bouton Télécharger ou ouvrez-le dans un nouvel onglet.
-          </p>
-        </section>
       </section>
 
       <aside class="media-sidebar">
@@ -66,23 +54,22 @@
           <h2>Informations</h2>
           <dl>
             <div>
-              <dt>Section</dt>
-              <dd id="media-section">—</dd>
+              <dt>Titre du document</dt>
+              <dd id="media-doc-title">—</dd>
             </div>
             <div>
-              <dt>Mise à jour</dt>
+              <dt>Auteur</dt>
+              <dd id="media-author">—</dd>
+            </div>
+            <div>
+              <dt>Audience</dt>
+              <dd id="media-audience">—</dd>
+            </div>
+            <div>
+              <dt>Date</dt>
               <dd id="media-updated">—</dd>
             </div>
-            <div>
-              <dt>Type</dt>
-              <dd id="media-kind">—</dd>
-            </div>
           </dl>
-        </section>
-
-        <section class="media-card media-sections">
-          <h2>Sections du cours</h2>
-          <div id="media-section-list" class="media-section-list"></div>
         </section>
       </aside>
     </main>

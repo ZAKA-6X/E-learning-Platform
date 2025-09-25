@@ -9,6 +9,8 @@ router.get('/:postId/comments', auth, postsController.listComments);
 router.post('/:postId/comments', auth, postsController.addComment);
 router.post('/comments/:commentId/votes', auth, postsController.voteComment);
 router.post('/:postId/votes', auth, postsController.votePost);
+router.delete('/:postId/comments/:commentId', auth, postsController.deleteComment);
+router.delete('/:postId', auth, postsController.deletePost);
 
 // POST /api/posts  (expects <input name="media" multiple>)
 router.post('/', auth, uploadMediaArray, postsController.addPost);

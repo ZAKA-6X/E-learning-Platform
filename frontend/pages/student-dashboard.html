@@ -43,7 +43,38 @@
         <button class="action-button" id="btn-creer" name="creer" title="Créer" data-open="publications">
           <i class="fa-solid fa-plus"></i> Créer
         </button>
-        <a class="user-avatar" id="user-avatar" name="user-avatar" href="/pages/profile.html" title="Voir mon profil">U</a>
+        <div
+          class="user-menu-trigger"
+          data-user-menu
+          data-profile-url="/pages/profile.html"
+        >
+          <button
+            type="button"
+            class="user-avatar"
+            id="user-avatar"
+            name="user-avatar"
+            title="Mon compte"
+            data-user-menu-toggle
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            U
+          </button>
+          <div
+            class="user-menu-panel"
+            data-user-menu-panel
+            role="menu"
+            aria-label="Actions utilisateur"
+            hidden
+          >
+            <button type="button" class="user-menu-item" data-action="profile" role="menuitem">
+              Profil
+            </button>
+            <button type="button" class="user-menu-item" data-action="logout" role="menuitem">
+              Déconnexion
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -267,33 +298,10 @@
             <p>Calendrier et informations sur les examens à venir.</p>
           </section>
 
-<section id="ressources" class="content-section">
-  <h2>📚 Bibliothèque</h2>
-  <div class="library-panel" data-library>
-    <!-- Loading -->
-    <div class="library-loading" data-library-loading role="status" aria-live="polite">
-      <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <span>Chargement des cours…</span>
-    </div>
-
-    <!-- Error -->
-    <div class="library-error" data-library-error hidden role="alert" aria-live="assertive">
-      <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-      <span>Impossible de charger les cours.</span>
-    </div>
-
-    <!-- Empty -->
-    <div class="library-empty" data-library-empty hidden aria-live="polite">
-      <div class="library-empty__icon" aria-hidden="true">📭</div>
-      <p>Aucun cours disponible pour votre classe pour le moment.</p>
-    </div>
-
-    <!-- Courses grid -->
-    <div class="library-grid" data-library-grid hidden></div>
-  </div>
-</section>
+          <section id="ressources" class="content-section">
+            <h2>📚 Bibliothèque</h2>  
+          </section>
  
-
           <section id="messagerie" class="content-section">
             <h2>✉️ Messagerie</h2>
             <p>Communiquez avec vos professeurs et camarades.</p>
@@ -359,7 +367,6 @@
     <script src="../js/notify.js" defer></script>
     <script src="../js/navbar.js" id="navbar-js" name="navbar-js"></script>
     <script src="../js/posts-display.js"></script>
-    <script src="../js/student-library.js" defer></script>
     <script src="../js/todolist.js"></script>
     <script src="../js/posts.js"></script>
     

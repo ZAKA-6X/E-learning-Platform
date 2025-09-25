@@ -2,23 +2,28 @@ const els = {
   back: document.getElementById("media-back"),
   title: document.getElementById("media-title"),
   breadcrumb: document.getElementById("media-breadcrumb"),
-  section: document.getElementById("media-section"),
   updated: document.getElementById("media-updated"),
-  kind: document.getElementById("media-kind"),
   courseMeta: document.getElementById("media-course-meta"),
-  descriptionBlock: document.getElementById("media-description-block"),
-  description: document.getElementById("media-description"),
-  download: document.getElementById("media-download"),
-  openExternal: document.getElementById("media-open-external"),
-  fallback: document.getElementById("media-fallback"),
   viewer: document.getElementById("media-viewer"),
   loading: document.getElementById("media-loading"),
-  sectionList: document.getElementById("media-section-list"),
+  docTitle: document.getElementById("media-doc-title"),
+  author: document.getElementById("media-author"),
+  audience: document.getElementById("media-audience"),
 };
 
 const params = new URLSearchParams(window.location.search);
 const courseId = params.get("courseId");
 const resourceId = params.get("resourceId");
+const directFileUrl = params.get("file");
+const directTitle = params.get("title") || "Document";
+const directKind = params.get("kind") || "document";
+const directUpdated = params.get("updated") || "";
+const directAuthor = params.get("author") || "";
+const directAudience = params.get("audience") || "";
+const directDescription = params.get("description") || "";
+const directBody = params.get("body") || "";
+const directFilename = params.get("filename") || "";
+const isStandaloneFile = Boolean(directFileUrl);
 
 const token = localStorage.getItem("token");
 if (!token) {
@@ -59,17 +64,11 @@ function showError(message) {
   }
   if (els.viewer) {
     els.viewer.innerHTML = `
-      <div class="media-error">
+      <div class="media-placeholder">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <p>${message || "Une erreur est survenue."}</p>
       </div>
     `;
-  }
-  if (els.download) {
-    els.download.hidden = true;
-  }
-  if (els.fallback) {
-    els.fallback.hidden = true;
   }
 }
 
@@ -101,23 +100,6 @@ function labelForResource(kind) {
   }
 }
 
-function iconForResource(kind) {
-  switch ((kind || "document").toLowerCase()) {
-    case "video":
-      return "fa-circle-play";
-    case "audio":
-      return "fa-music";
-    case "image":
-      return "fa-image";
-    case "link":
-      return "fa-link";
-    case "quiz":
-      return "fa-question";
-    default:
-      return "fa-file-lines";
-  }
-}
-
 function mediaHref(resourceId, fallbackCourseId) {
   const resolvedCourseId = courseId || fallbackCourseId;
   if (!resolvedCourseId || !resourceId) return null;
@@ -140,6 +122,13 @@ function fileExtension(url) {
   } catch (err) {
     return "";
   }
+}
+
+function truncateText(text, max = 180) {
+  if (!text) return "";
+  const normalized = text.trim();
+  if (normalized.length <= max) return normalized;
+  return `${normalized.slice(0, max).trim()}…`;
 }
 
 function createIframe(url) {
@@ -183,7 +172,6 @@ function renderResourceViewer(resource) {
   }
 
   els.viewer.innerHTML = "";
-  els.fallback.hidden = true;
 
   const kind = (resource?.kind || "document").toLowerCase();
   const url = absolutizeUrl(resource?.resource_url);
@@ -191,28 +179,19 @@ function renderResourceViewer(resource) {
   const hasContent = typeof resource?.content === "string" && resource.content.trim().length > 0;
 
   if (!hasUrl && !hasContent) {
-    els.fallback.hidden = false;
+    const fallback = document.createElement("div");
+    fallback.className = "media-placeholder";
+    fallback.innerHTML = `
+      <i class="fa-solid fa-file"></i>
+      <p>Ce document n'est pas disponible pour la lecture.</p>
+    `;
+    els.viewer.appendChild(fallback);
     return;
-  }
-
-  if (els.download) {
-    els.download.hidden = !hasUrl;
-    if (hasUrl) {
-      els.download.href = url;
-    }
-  }
-
-  if (els.openExternal) {
-    els.openExternal.hidden = !hasUrl;
-    if (hasUrl) {
-      els.openExternal.href = url;
-    }
   }
 
   switch (kind) {
     case "video": {
       if (!hasUrl) {
-        els.fallback.hidden = false;
         break;
       }
       els.viewer.appendChild(createVideo(url));
@@ -220,7 +199,6 @@ function renderResourceViewer(resource) {
     }
     case "audio": {
       if (!hasUrl) {
-        els.fallback.hidden = false;
         break;
       }
       els.viewer.appendChild(createAudio(url));
@@ -228,7 +206,6 @@ function renderResourceViewer(resource) {
     }
     case "image": {
       if (!hasUrl) {
-        els.fallback.hidden = false;
         break;
       }
       els.viewer.appendChild(createImage(url, resource?.title));
@@ -236,7 +213,6 @@ function renderResourceViewer(resource) {
     }
     case "link": {
       // External links are better viewed outside for security reasons
-      els.fallback.hidden = false;
       break;
     }
     case "quiz": {
@@ -261,182 +237,68 @@ function renderResourceViewer(resource) {
           els.viewer.appendChild(createImage(url, resource?.title));
         } else {
           els.viewer.appendChild(createIframe(url));
-        }
+      }
       } else if (hasContent) {
         const article = document.createElement("article");
         article.className = "media-article";
         article.textContent = resource.content.trim();
         els.viewer.appendChild(article);
-      } else {
-        els.fallback.hidden = false;
       }
       break;
     }
   }
 
   if (!els.viewer.childElementCount) {
-    els.fallback.hidden = false;
+    const fallback = document.createElement("div");
+    fallback.className = "media-placeholder";
+    fallback.innerHTML = `
+      <i class="fa-solid fa-file"></i>
+      <p>Ce document n'est pas disponible pour la lecture.</p>
+    `;
+    els.viewer.appendChild(fallback);
   }
 }
 
-function renderCourseMeta(course) {
-  if (!els.courseMeta) return;
-  const parts = [];
-  if (course?.subject_name) parts.push(course.subject_name);
-  if (course?.class_name) parts.push(`Classe ${course.class_name}`);
-  if (course?.teacher_name) parts.push(course.teacher_name);
-  if (!parts.length && (course?.updated_at || course?.created_at)) {
-    const date = formatDate(course.updated_at || course.created_at);
-    if (date && date !== "—") parts.push(`Mis à jour ${date}`);
-  }
-  els.courseMeta.textContent = parts.join(" • ") || "—";
-}
-
-function renderSectionList(course, currentResource) {
-  if (!els.sectionList) return;
-
-  const container = els.sectionList;
-  container.innerHTML = "";
-
-  const sections = Array.isArray(course?.sections) ? course.sections : [];
-  const resources = Array.isArray(course?.resources) ? course.resources : [];
-  const currentResourceId = currentResource?.id != null ? String(currentResource.id) : null;
-  const currentSectionId = currentResource?.section_id != null ? String(currentResource.section_id) : null;
-
-  if (!sections.length && !resources.length) {
-    const empty = document.createElement("p");
-    empty.className = "media-section-card__empty";
-    empty.textContent = "Aucune section n'est encore disponible pour ce cours.";
-    container.appendChild(empty);
-    return;
-  }
-
-  const resourcesBySection = new Map();
-  resources.forEach((item) => {
-    const key = item.section_id != null ? String(item.section_id) : null;
-    if (!resourcesBySection.has(key)) {
-      resourcesBySection.set(key, []);
-    }
-    resourcesBySection.get(key).push(item);
-  });
-
-  const appendSectionCard = (section, list, { highlight = false, fallbackTitle = null, fallbackDescription = null } = {}) => {
-    const card = document.createElement("article");
-    card.className = "media-section-card";
-    if (highlight) card.classList.add("is-active");
-
-    const header = document.createElement("div");
-    header.className = "media-section-card__header";
-
-    const titleEl = document.createElement("h3");
-    titleEl.textContent = fallbackTitle || section?.title || "Section";
-    header.appendChild(titleEl);
-
-    const metaEl = document.createElement("p");
-    metaEl.className = "media-section-card__meta";
-    const count = list.length;
-    metaEl.textContent = count ? `${count} ressource${count > 1 ? "s" : ""}` : "Aucune ressource";
-    header.appendChild(metaEl);
-
-    card.appendChild(header);
-
-    const description = (section?.description || "").trim() || fallbackDescription;
-    if (description) {
-      const descEl = document.createElement("p");
-      descEl.className = "media-section-card__description";
-      descEl.textContent = description;
-      card.appendChild(descEl);
-    }
-
-    if (list.length) {
-      const listEl = document.createElement("ul");
-      listEl.className = "media-section-card__list";
-
-      list.forEach((resource) => {
-        const li = document.createElement("li");
-        li.className = "media-section-card__item";
-        const resourceId = resource?.id != null ? String(resource.id) : null;
-        const href = mediaHref(resourceId, course?.id);
-
-        if (resourceId && resourceId === currentResourceId) {
-          li.classList.add("is-current");
-        }
-
-        if (href) {
-          const link = document.createElement("a");
-          link.className = "media-section-card__link";
-          link.href = href;
-          if (resourceId && resourceId === currentResourceId) {
-            link.setAttribute("aria-current", "page");
-          }
-
-          const iconWrap = document.createElement("span");
-          iconWrap.className = "media-section-card__icon";
-          iconWrap.innerHTML = `<i class="fa-solid ${iconForResource(resource.kind)}"></i>`;
-          link.appendChild(iconWrap);
-
-          const textWrap = document.createElement("span");
-          textWrap.className = "media-section-card__text";
-
-          const title = document.createElement("span");
-          title.className = "media-section-card__title";
-          title.textContent = resource.title || "Sans titre";
-          textWrap.appendChild(title);
-
-          const kindEl = document.createElement("span");
-          kindEl.className = "media-section-card__kind";
-          const metaParts = [labelForResource(resource.kind)];
-          const date = formatDate(resource.updated_at || resource.created_at);
-          if (date && date !== "—") metaParts.push(date);
-          kindEl.textContent = metaParts.join(" • ");
-          textWrap.appendChild(kindEl);
-
-          link.appendChild(textWrap);
-          li.appendChild(link);
-        } else {
-          const title = document.createElement("span");
-          title.className = "media-section-card__title";
-          title.textContent = resource.title || "Sans titre";
-          li.appendChild(title);
-        }
-
-        listEl.appendChild(li);
-      });
-
-      card.appendChild(listEl);
-    } else {
-      const emptyMsg = document.createElement("p");
-      emptyMsg.className = "media-section-card__empty";
-      emptyMsg.textContent = "Pas encore de ressources dans cette section.";
-      card.appendChild(emptyMsg);
-    }
-
-    container.appendChild(card);
+function renderStandaloneFile() {
+  const url = absolutizeUrl(directFileUrl);
+  const resource = {
+    title: directTitle,
+    kind: directKind,
+    resource_url: url,
   };
 
-  sections.forEach((section) => {
-    const sectionKey = section?.id != null ? String(section.id) : null;
-    const list = resourcesBySection.get(sectionKey) || [];
-    const highlight = sectionKey && sectionKey === currentSectionId;
-    appendSectionCard(section, list, { highlight });
-    resourcesBySection.delete(sectionKey);
-  });
+  if (els.title) {
+    els.title.textContent = directTitle;
+  }
 
-  resourcesBySection.forEach((list, key) => {
-    if (!list.length) return;
-    const highlight = (key === null && !currentSectionId) || (key != null && key === currentSectionId);
-    appendSectionCard(
-      null,
-      list,
-      {
-        highlight,
-        fallbackTitle: key === null ? "Autres ressources" : `Section ${key}`,
-        fallbackDescription: key === null
-          ? "Ressources non rattachées à une section spécifique."
-          : "Cette section n'est pas encore configurée dans le cours.",
-      }
-    );
-  });
+  document.title = `${directTitle} — Lecteur`;
+
+  if (els.breadcrumb) {
+    els.breadcrumb.textContent = directAuthor || directTitle;
+  }
+
+  if (els.courseMeta) {
+    const summary = truncateText(directBody || directDescription || "");
+    els.courseMeta.textContent = summary || "—";
+  }
+
+  if (els.docTitle) {
+    els.docTitle.textContent = directFilename || directTitle;
+  }
+
+  if (els.author) {
+    els.author.textContent = directAuthor || "—";
+  }
+
+  if (els.audience) {
+    els.audience.textContent = directAudience || labelForResource(resource.kind);
+  }
+
+  if (els.updated) {
+    els.updated.textContent = directUpdated ? formatDate(directUpdated) : "—";
+  }
+
+  renderResourceViewer(resource);
 }
 
 async function fetchResource() {
@@ -476,9 +338,14 @@ async function fetchResource() {
       return;
     }
 
+    const resourceTitle = resource.title || "Ressource sans titre";
+    const filename = resource.filename || resource.title || "Document";
+
     if (els.title) {
-      els.title.textContent = resource.title || "Ressource sans titre";
+      els.title.textContent = resourceTitle;
     }
+
+    document.title = `${resourceTitle} — Lecteur`;
 
     if (els.breadcrumb) {
       const crumbParts = [];
@@ -491,30 +358,41 @@ async function fetchResource() {
       els.breadcrumb.textContent = crumbParts.join(" • ") || "Ressource";
     }
 
-    if (els.section) {
-      const sectionObj = sections.find((item) => item.id === resource.section_id);
-      els.section.textContent = sectionObj?.title || "—";
-    }
-
     if (els.updated) {
       els.updated.textContent = formatDate(resource.updated_at || resource.created_at);
     }
 
-    if (els.kind) {
-      els.kind.textContent = labelForResource(resource.kind);
-    }
-
-    if (els.descriptionBlock && els.description) {
-      if (resource.description) {
-        els.description.textContent = resource.description;
-        els.descriptionBlock.hidden = false;
-      } else {
-        els.descriptionBlock.hidden = true;
+    if (els.courseMeta) {
+      const metaParts = [];
+      if (resource.description) metaParts.push(resource.description);
+      if (!metaParts.length && course.subject_name) metaParts.push(course.subject_name);
+      if (!metaParts.length && course.class_name) metaParts.push(`Classe ${course.class_name}`);
+      if (!metaParts.length && course.teacher_name) metaParts.push(course.teacher_name);
+      if (!metaParts.length) {
+        const sectionObj = sections.find((item) => item.id === resource.section_id);
+        if (sectionObj?.title) metaParts.push(sectionObj.title);
       }
+      const summary = truncateText(metaParts.join(" • "));
+      els.courseMeta.textContent = summary || "—";
     }
 
-    renderCourseMeta(course);
-    renderSectionList(course, resource);
+    if (els.docTitle) {
+      els.docTitle.textContent = filename;
+    }
+
+    if (els.author) {
+      const authorName = resource.author?.name || resource.owner?.name || course.teacher_name || "";
+      els.author.textContent = authorName || "—";
+    }
+
+    if (els.audience) {
+      const audienceParts = [];
+      if (resource.audience_label) audienceParts.push(resource.audience_label);
+      if (!audienceParts.length && course.class_name) audienceParts.push(`Classe ${course.class_name}`);
+      if (course.subject_name) audienceParts.push(course.subject_name);
+      els.audience.textContent = audienceParts.join(" • ") || labelForResource(resource.kind);
+    }
+
     renderResourceViewer(resource);
   } catch (err) {
     console.error("Failed to fetch resource", err);
@@ -522,4 +400,8 @@ async function fetchResource() {
   }
 }
 
-fetchResource();
+if (isStandaloneFile) {
+  renderStandaloneFile();
+} else {
+  fetchResource();
+}

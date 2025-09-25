@@ -5,7 +5,6 @@
     const bodyParser = require('body-parser');
     const subjectsRoutes = require('./routes/subjectsRoutes');
     const classesRoutes = require('./routes/classesRoutes');
-    const coursesRoutes = require('./routes/coursesRoutes');
     const postsRoutes = require('./routes/postsRoutes');
     const fileRoutes = require('./routes/fileRoutes');
     const usersRoutes = require('./routes/usersRoutes');
@@ -28,7 +27,6 @@
     app.use('/todos', require('./routes/todosRoutes'));
     app.use('/subjects', subjectsRoutes);
     app.use('/classes', classesRoutes);
-    app.use('/api/courses', coursesRoutes);
     app.use('/api/posts', postsRoutes);
     app.use('/api/users', usersRoutes);
 

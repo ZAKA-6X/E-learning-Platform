@@ -22,7 +22,14 @@ Project structure and setup for E-learning Platform.
     add comments and vote to posts,
     set posts for teachers users,
     add user profile section,
-    
+    add filter sort tools to posts,
+    fix audience for stud-posts,
+    media reader for posts,
+    ***responsive reader-media,
+    ***back to login page,
+    ***error and confirm message of pages,
+    posts, comments delete,
+    reset sort, filter after creation new post
     
 
 
