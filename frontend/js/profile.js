@@ -19,10 +19,10 @@
     fullName: document.getElementById('profile-fullname'),
     email: document.getElementById('profile-email'),
     phone: document.getElementById('profile-phone'),
+    phoneField: document.getElementById('profile-phone-field'),
     roleName: document.getElementById('profile-role-name'),
     school: document.getElementById('profile-school'),
     className: document.getElementById('profile-class'),
-    status: document.getElementById('profile-status'),
     created: document.getElementById('profile-created'),
     homeLink: document.getElementById('profile-home-link'),
     backLink: document.getElementById('profile-back'),
@@ -93,11 +93,14 @@
     setText(el.email, profile.email || '—');
     setText(el.phone, profile.phone || '—');
     setText(el.roleName, roleLabel);
-    setText(el.status, formatStatus(profile.status));
     setText(el.school, schoolName);
     setText(el.className, className);
     setText(el.created, formatDate(profile.created_at));
     setText(el.roleBadge, roleLabel);
+
+    if (el.phoneField) {
+      el.phoneField.classList.toggle('hidden', profile.role === 'student');
+    }
 
     const initial = (fullName || profile.email || ' ')[0]?.toUpperCase() || 'U';
     if (el.avatar) el.avatar.textContent = initial;
@@ -135,18 +138,6 @@
       }).format(date);
     } catch {
       return '—';
-    }
-  }
-
-  function formatStatus(status) {
-    if (!status) return '—';
-    switch (String(status).toLowerCase()) {
-      case 'active':
-        return 'Actif';
-      case 'inactive':
-        return 'Inactif';
-      default:
-        return status;
     }
   }
 

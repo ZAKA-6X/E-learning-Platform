@@ -30,6 +30,16 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
 
+        const loginName = [data.user?.first_name, data.user?.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        if (loginName) {
+          localStorage.setItem("user_profile_name", loginName);
+        } else if (data.user?.first_name) {
+          localStorage.setItem("user_profile_name", data.user.first_name);
+        }
+
         // ✅ Redirect based on role
         if (data.user.role === "admin") {
           window.location.href = "../pages/admin-dashboard.html";

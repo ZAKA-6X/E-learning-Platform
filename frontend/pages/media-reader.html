@@ -16,9 +16,6 @@
   <body class="media-reader">
     <header class="header media-nav">
       <div class="header-brand">
-        <button class="mobile-nav-toggle" type="button" aria-hidden="true" tabindex="-1">
-          <i class="fa-solid fa-bars" aria-hidden="true"></i>
-        </button>
         <a class="logo" id="profile-home-link" href="student-dashboard.html">
           <img src="../assets/logo.png" alt="Logo ClicaEd" />
           <span>ClicaEd</span>
@@ -26,6 +23,16 @@
       </div>
       <div class="search-bar media-nav-spacer" aria-hidden="true"></div>
       <div class="user-menu">
+        <button
+          type="button"
+          class="action-button media-details-trigger"
+          data-media-details-toggle
+          aria-controls="media-sidebar"
+          aria-expanded="false"
+        >
+          <span>Détails du média</span>
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        </button>
         <button id="media-back" class="action-button media-return">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Retour</span>
@@ -43,7 +50,15 @@
         </div>
       </section>
 
-      <aside class="media-sidebar">
+      <aside class="media-sidebar" id="media-sidebar" data-media-sidebar>
+        <button
+          type="button"
+          class="media-sidebar-close action-button"
+          data-media-details-close
+          aria-label="Fermer les détails"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
         <section class="media-card media-course">
           <p id="media-breadcrumb" class="media-breadcrumb muted"></p>
           <h1 id="media-title" class="media-title">Chargement…</h1>
@@ -73,6 +88,8 @@
         </section>
       </aside>
     </main>
+
+    <div class="media-sidebar-overlay" data-media-sidebar-overlay hidden></div>
 
     <script src="../js/media-reader.js" type="module"></script>
   </body>

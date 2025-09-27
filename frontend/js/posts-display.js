@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
       filename: att.filename || "",
     });
     const readerUrl = `/pages/media-reader.html?${params.toString()}`;
-    window.open(readerUrl, "_blank", "noopener,noreferrer");
+    window.location.assign(readerUrl);
   }
 
   function stripHtml(html) {

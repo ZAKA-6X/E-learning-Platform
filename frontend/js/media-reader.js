@@ -1,5 +1,9 @@
 const els = {
   back: document.getElementById("media-back"),
+  detailsToggle: document.querySelector("[data-media-details-toggle]"),
+  sidebar: document.querySelector("[data-media-sidebar]"),
+  detailsClose: document.querySelector("[data-media-details-close]"),
+  overlay: document.querySelector("[data-media-sidebar-overlay]"),
   title: document.getElementById("media-title"),
   breadcrumb: document.getElementById("media-breadcrumb"),
   updated: document.getElementById("media-updated"),
@@ -31,6 +35,8 @@ if (!token) {
   throw new Error("Unauthorized");
 }
 
+const sidebarMediaQuery = window.matchMedia("(max-width: 1105px)");
+
 const user = (() => {
   try {
     return JSON.parse(localStorage.getItem("user")) || {};
@@ -56,6 +62,97 @@ if (els.back) {
       window.location.href = defaultBack;
     }
   });
+}
+
+setupResponsiveSidebar();
+
+function setupResponsiveSidebar() {
+  if (!els.sidebar) return;
+
+  const openSidebar = () => {
+    if (!sidebarMediaQuery.matches) return;
+    els.sidebar.classList.add("is-visible");
+    document.body.classList.add("media-sidebar-open");
+    els.sidebar.setAttribute("aria-hidden", "false");
+    els.detailsToggle?.setAttribute("aria-expanded", "true");
+    if (els.overlay) {
+      els.overlay.hidden = false;
+    }
+
+    const focusable = els.sidebar.querySelector(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    focusable?.focus({ preventScroll: true });
+  };
+
+  const closeSidebar = ({ restoreFocus } = { restoreFocus: true }) => {
+    els.sidebar.classList.remove("is-visible");
+    document.body.classList.remove("media-sidebar-open");
+    els.detailsToggle?.setAttribute("aria-expanded", "false");
+    if (sidebarMediaQuery.matches) {
+      els.sidebar.setAttribute("aria-hidden", "true");
+    } else {
+      els.sidebar.removeAttribute("aria-hidden");
+    }
+    if (els.overlay) {
+      els.overlay.hidden = true;
+    }
+
+    if (restoreFocus && sidebarMediaQuery.matches) {
+      els.detailsToggle?.focus();
+    }
+  };
+
+  const syncSidebarForViewport = (matches) => {
+    if (matches) {
+      els.sidebar.setAttribute("aria-hidden", "true");
+      els.detailsToggle?.setAttribute("aria-expanded", "false");
+      closeSidebar({ restoreFocus: false });
+    } else {
+      els.sidebar.classList.remove("is-visible");
+      els.sidebar.removeAttribute("aria-hidden");
+      document.body.classList.remove("media-sidebar-open");
+      els.overlay && (els.overlay.hidden = true);
+      els.detailsToggle?.setAttribute("aria-expanded", "false");
+    }
+  };
+
+  els.detailsToggle?.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (els.sidebar.classList.contains("is-visible")) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+
+  els.detailsClose?.addEventListener("click", (event) => {
+    event.preventDefault();
+    closeSidebar();
+  });
+
+  els.overlay?.addEventListener("click", () => {
+    closeSidebar();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.body.classList.contains("media-sidebar-open")) {
+      event.preventDefault();
+      closeSidebar();
+    }
+  });
+
+  const handleViewportChange = (event) => {
+    syncSidebarForViewport(event.matches);
+  };
+
+  if (typeof sidebarMediaQuery.addEventListener === "function") {
+    sidebarMediaQuery.addEventListener("change", handleViewportChange);
+  } else if (typeof sidebarMediaQuery.addListener === "function") {
+    sidebarMediaQuery.addListener(handleViewportChange);
+  }
+
+  syncSidebarForViewport(sidebarMediaQuery.matches);
 }
 
 function showError(message) {

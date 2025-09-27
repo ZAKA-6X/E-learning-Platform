@@ -25,11 +25,14 @@ Project structure and setup for E-learning Platform.
     add filter sort tools to posts,
     fix audience for stud-posts,
     media reader for posts,
-    ***responsive reader-media,
+    responsive reader-media,
     ***back to login page,
-    ***error and confirm message of pages,
+    error and confirm message of pages,
     posts, comments delete,
-    reset sort, filter after creation new post
+    reset sort, filter after creation new post,
+    add calender display exams (no database***),
+    home page hase list student,
+    inbox page (need activate***),
     
 
 

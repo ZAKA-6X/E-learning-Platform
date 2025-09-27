@@ -55,11 +55,23 @@
   function applyAvatarInitial() {
     const profileName = (localStorage.getItem('user_profile_name') || '').trim();
     const storedUser = safeParse(localStorage.getItem('user'));
-    const candidate = profileName || storedUser?.email || storedUser?.role || '';
-    const letter = candidate ? candidate.charAt(0).toUpperCase() : 'U';
+
+    const initialSource =
+      profileName ||
+      (storedUser?.first_name || '').trim() ||
+      (storedUser?.email || '').trim() ||
+      (storedUser?.role || '').trim();
+
+    const letter = initialSource
+      ? initialSource
+          .trim()
+          .charAt(0)
+          .toUpperCase()
+      : 'U';
 
     qsAll(document, '.user-avatar').forEach((node) => {
-      if (!node.textContent || node.textContent === 'U' || node.dataset.forceInitial === 'true') {
+      const current = (node.textContent || '').trim();
+      if (!current || current === 'U' || node.dataset.forceInitial === 'true') {
         node.textContent = letter || 'U';
       }
     });
