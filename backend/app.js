@@ -1,40 +1,32 @@
 // backend/app.js
-require('dotenv').config();
-
 const express = require('express');
 const path = require('path');
-const bodyParser = require('body-parser');
+require('dotenv').config();
 
-const subjectsRoutes = require('./routes/subjectsRoutes');
-const classesRoutes  = require('./routes/classesRoutes');  // ← add
-const coursesRoutes  = require('./routes/coursesRoutes');
-const postsRoutes    = require('./routes/postsRoutes');
+const authRoutes = require('./routes/authRoutes');
+const teacherRoutes = require('./routes/teacher');
+const libraryRoutes = require('./routes/library');
 
 const app = express();
-const port = process.env.PORT;
-
-app.use(express.static(path.join(__dirname, '../frontend')));
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use('/', require('./routes/authRoutes'));
-app.use('/', require('./routes/fileRoutes'));
-app.use('/admin', require('./routes/adminRoutes'));
-app.use('/todos', require('./routes/todosRoutes'));
+// ✅ serve the right folder
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-app.use('/subjects', subjectsRoutes);
-app.use('/classes',  classesRoutes);   // ← mount
-app.use('/api/courses', coursesRoutes);
-app.use('/api/posts',    postsRoutes);
-
-app.get('/login', (req, res) => {
+// PAGES
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/pages/login.html'));
 });
 
-app.get('/', (req, res) => {
-  res.redirect('/login');
+app.get('/teacher', (req, res) => {
+  res.set('Cache-Control', 'no-store'); // <-- stop browser/proxy caching the HTML
+  res.sendFile(path.join(__dirname, '../frontend/pages/teacher-dashboard.html'));
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+// API
+app.use('/api/auth', authRoutes);
+app.use('/api/teacher', teacherRoutes);
+app.use('/api/teacher', libraryRoutes);
+
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => console.log(`http://localhost:${PORT}`));

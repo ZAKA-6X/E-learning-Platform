@@ -1,44 +1,41 @@
 // frontend/js/auth.js
-(function () {
-  const form = document.getElementById("login-form");
-  const emailEl = document.getElementById("email");
-  const passEl = document.getElementById("password");
-  const errorEl = document.getElementById("login-error");
+const form = document.getElementById("login-form");
+const errorBox = document.getElementById("login-error");
 
-  if (!form) return;
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.textContent = "";
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (errorEl) errorEl.textContent = "";
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-    const email = emailEl.value.trim();
-    const password = passEl.value;
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-    try {
-      const resp = await fetch("/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    const data = await res.json();
 
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        const msg = data?.message || data?.error || "Échec de connexion.";
-        if (errorEl) errorEl.textContent = msg;
-        else alert(msg);
-        return;
-      }
-
-      // Save JWT so other pages can send Authorization: Bearer
-      localStorage.setItem("token", data.token);
-
-      // Redirect to teacher dashboard (adjust if needed)
-      window.location.href = "/pages/teacher-dashboard.html";
-    } catch (err) {
-      console.error("[login]", err);
-      if (errorEl) errorEl.textContent = "Erreur réseau.";
-      else alert("Erreur réseau.");
+    if (!res.ok) {
+      errorBox.textContent = data.message || data.error || "Échec de la connexion.";
+      return;
     }
-  });
-})();
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    // simple role-based redirect
+    if (data.user.role === "teacher") {
+      window.location.href = "/teacher";
+    } else if (data.user.role === "ADMIN") {
+      window.location.href = "/admin-dashboard.html";
+    } else {
+      window.location.href = "/"; // or a student dashboard if you have one
+    }
+  } catch (err) {
+    console.error(err);
+    errorBox.textContent = "Erreur réseau ou serveur.";
+  }
+});

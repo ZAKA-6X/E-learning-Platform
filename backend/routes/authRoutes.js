@@ -40,8 +40,8 @@ router.post('/login', async (req, res) => {
 
     // JWT must include id + school_id + role (used by coursesController)
     const payload = {
-      id: user.id,
-      school_id: user.school_id,
+      userId: user.id,
+      schoolId: user.school_id,
       role: user.role,
       email: user.email,
       name,

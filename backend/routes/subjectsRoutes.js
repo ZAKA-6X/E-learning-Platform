@@ -1,9 +1,0 @@
-// backend/routes/subjectsRoutes.js
-const router = require('express').Router();
-const auth = require('../middleware/authMiddleware');
-const controller = require('../controllers/subjectsController');
-
-// existing routes can stay…
-router.get('/mine', auth, controller.listMine);
-
-module.exports = router;
