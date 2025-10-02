@@ -164,4 +164,4 @@ Store token in localStorage as token or authToken.
 
 Use the same JWT_SECRET in auth and middleware.
 
-If offerings return a different id field, keep normalization in renderOfferings().
+If offerings return a different id field, keep normalization in renderOfferings()..

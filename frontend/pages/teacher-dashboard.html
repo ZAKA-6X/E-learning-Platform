@@ -230,7 +230,7 @@
                         </div>
                       </form>
                     </dialog>
-
+                    
                     <dialog id="dlg-add-item" class="course-dialog">
                       <form id="form-add-item" class="course-form" method="dialog">
                         <input type="hidden" id="inp-item-section-id" />
@@ -263,6 +263,86 @@
                         <div class="dialog-actions">
                           <button type="button" class="btn-secondary" data-close="dlg-add-item">Annuler</button>
                           <button type="submit" class="btn-primary">Ajouter</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <dialog id="dlg-upload" class="course-dialog">
+                      <form id="form-upload" class="course-form" method="dialog">
+                        <input type="hidden" id="up-section-id" />
+                        <div class="dialog-header">
+                          <h3>Ajouter des fichiers</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-upload" title="Fermer" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid">
+                          <label class="field" style="grid-column: span 2;">
+                            <span>Fichiers</span>
+                            <input id="up-files" type="file" multiple />
+                          </label>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" data-close="dlg-upload">Annuler</button>
+                          <button id="btn-upload-go" class="btn-primary">Uploader</button>
+                        </div>
+                      </form>
+                    </dialog>
+                    <dialog id="dlg-confirm" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-confirm">
+                        <div class="dialog-header">
+                          <h3 id="confirm-title">Confirmation</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-confirm" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <p id="confirm-message"></p>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" id="confirm-cancel">Annuler</button>
+                          <button type="submit" class="btn-primary" id="confirm-ok">Confirmer</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <!-- PROMPT (single text input) -->
+                    <dialog id="dlg-prompt" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-prompt">
+                        <div class="dialog-header">
+                          <h3 id="prompt-title">Modifier</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-prompt" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <label class="field">
+                            <span id="prompt-label">Valeur</span>
+                            <input type="text" id="prompt-input" required />
+                          </label>
+                          <p id="prompt-helper" class="muted"></p>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" id="prompt-cancel">Annuler</button>
+                          <button type="submit" class="btn-primary" id="prompt-ok">Enregistrer</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <!-- ALERT (message only) -->
+                    <dialog id="dlg-alert" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-alert">
+                        <div class="dialog-header">
+                          <h3 id="alert-title">Information</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-alert" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <p id="alert-message"></p>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="submit" class="btn-primary" id="alert-ok">OK</button>
                         </div>
                       </form>
                     </dialog>
