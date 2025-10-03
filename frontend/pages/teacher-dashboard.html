@@ -346,6 +346,62 @@
                         </div>
                       </form>
                     </dialog>
+
+                    <!-- ===== AI MENU (choose mode) ===== -->
+                    <dialog id="dlg-ai-menu" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-ai-menu">
+                        <div class="dialog-header">
+                          <h3>Génération IA</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-ai-menu" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <input type="hidden" id="ai-menu-section-id" />
+                        <input type="hidden" id="ai-menu-item-id" />
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <label class="radio-row"><input type="radio" name="ai-mode" value="summary" checked> Résumé</label>
+                          <label class="radio-row"><input type="radio" name="ai-mode" value="concepts"> Concepts clés</label>
+                          <label class="radio-row"><input type="radio" name="ai-mode" value="quiz"> Quiz (QCM)</label>
+                          <label class="radio-row"><input type="radio" name="ai-mode" value="exercises"> Exercices + solutions</label>
+                          <p class="muted">Choisissez le type de génération pour cette ressource.</p>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" data-close="dlg-ai-menu">Annuler</button>
+                          <button type="submit" class="btn-primary">Générer</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <!-- ===== AI PREVIEW (result & save) ===== -->
+                    <dialog id="dlg-ai-preview" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-ai-preview">
+                        <div class="dialog-header">
+                          <h3 id="ai-prev-title">Résultat IA</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-ai-preview" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <pre id="ai-prev-json" class="ai-preview hidden"></pre>
+                          <div id="ai-prev-md" class="ai-preview"></div>
+                          <div class="muted" id="ai-prev-hint"></div>
+                          <label class="field">
+                            <span>Enregistrer dans le dossier</span>
+                            <select id="ai-prev-target-section"></select>
+                          </label>
+                          <label class="field">
+                            <span>Nom du fichier</span>
+                            <input id="ai-prev-filename" type="text" placeholder="Résumé.md / Quiz.json / Exercices.md"/>
+                          </label>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" id="ai-prev-copy">Copier</button>
+                          <button type="button" class="btn-secondary" id="ai-prev-download">Télécharger</button>
+                          <button type="submit" class="btn-primary" id="ai-prev-save">Insérer dans le cours</button>
+                        </div>
+                      </form>
+                    </dialog>
+                    
                   </div>
 
                   <div id="offering-detail-error" class="course-detail__error hidden" role="alert">

@@ -22,6 +22,24 @@ try {
 
 const STORAGE_BUCKET = process.env.COURSE_BUCKET || 'course-files';
 
+/* ---------- OpenAI ---------- */
+let openai = null;
+try {
+  const { OpenAI } = require('openai');
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+} catch (e) {
+  console.warn('[AI] OpenAI SDK not installed yet.');
+}
+
+/* ---------- Fetch shim for Node <18 (ESM-safe) ---------- */
+let fx = globalThis.fetch;
+async function ensureFetch() {
+  if (!fx) {
+    const mod = await import('node-fetch'); // ESM default export
+    fx = mod.default;
+  }
+}
+
 /* ---------- Ownership guards ---------- */
 async function assertOwnsAssignment(teacherId, assignmentId) {
   const { data, error } = await supabase
@@ -105,6 +123,72 @@ function storageKeyFromPublicUrl(url) {
     if (idx2 >= 0) return path.slice(idx2 + marker2.length);
   } catch (_) {}
   return null;
+}
+
+/* ---------- Resource content extractors (PDF/DOCX/Text/Link/Image/Video) ---------- */
+async function fetchArrayBuffer(url) {
+  await ensureFetch();
+  const res = await fx(url);
+  if (!res.ok) throw new Error(`Fetch failed ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+async function extractTextFromUrl(url, kind = 'other') {
+  const lcKind = (kind || '').toLowerCase();
+  try {
+    if (lcKind === 'pdf') {
+      const pdfParse = require('pdf-parse'); // will throw if not installed
+      const buf = await fetchArrayBuffer(url);
+      const data = await pdfParse(buf);
+      return (data.text || '').trim();
+    }
+    if (lcKind === 'docx') {
+      const mammoth = require('mammoth'); // will throw if not installed
+      const buf = await fetchArrayBuffer(url);
+      const { value } = await mammoth.extractRawText({ buffer: buf });
+      return (value || '').trim();
+    }
+    if (lcKind === 'link') {
+      await ensureFetch();
+      const res = await fx(url);
+      const html = await res.text();
+      const text = html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return text.slice(0, 80000); // safety cap
+    }
+    // default: try plain text download
+    await ensureFetch();
+    const res = await fx(url);
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    if (ct.includes('text/')) {
+      const t = await res.text();
+      return t.slice(0, 80000).trim();
+    }
+    // non-textual (image/video/audio) → return empty; model can read the URL directly
+    return '';
+  } catch (e) {
+    console.warn('[extractTextFromUrl] fallback to empty:', e?.message);
+    return '';
+  }
+}
+
+/* Prompt builders */
+function buildPrompt(mode, text) {
+  switch (mode) {
+    case 'summary':
+      return `Tu es un assistant pédagogique. À partir du contenu ci-dessous, écris un RÉSUMÉ (200–300 mots) en français, clair pour un élève de lycée. Réponds en Markdown.\n\n=== CONTENU ===\n${text}`;
+    case 'concepts':
+      return `Tu es un assistant pédagogique. À partir du contenu ci-dessous, liste 6 à 12 CONCEPTS CLÉS sous forme de puces « - ... » en français. Réponds en Markdown.\n\n=== CONTENU ===\n${text}`;
+    case 'exercises':
+      return `Génère 3 à 5 EXERCICES avec SOLUTIONS détaillées en français, format Markdown. Les énoncés sont courts et progressifs. Réponds uniquement en Markdown.\n\n=== CONTENU ===\n${text}`;
+    case 'quiz':
+    default:
+      return `Génère un QCM en français au format JSON strict: {"quiz":[{"question":"...","options":["A","B","C","D"],"answerIndex":0,"rationale":"..."}]}. 8 à 12 items. Questions basées sur le contenu ci-dessous. Aucun texte hors JSON.\n\n=== CONTENU ===\n${text}`;
+  }
 }
 
 /* ---------- Controllers ---------- */
@@ -516,7 +600,7 @@ exports.deleteSection = async (req, res) => {
   try {
     const teacherId = req.user.userId;
     const { sectionId } = req.params;
-    const sec = await assertOwnsSection(teacherId, sectionId);
+    await assertOwnsSection(teacherId, sectionId);
 
     // fetch items
     const { data: items, error: iErr } = await supabase
@@ -595,5 +679,185 @@ exports.moveItem = async (req, res) => {
     console.error('[moveItem]', e);
     const status = /Forbidden/.test(e.message) ? 403 : /not found/i.test(e.message) ? 404 : 500;
     res.status(status).json({ error: e.message });
+  }
+};
+
+/* ===================== AI: generate from a resource ===================== */
+// POST /sections/:sectionId/items/:itemId/ai  { mode: 'summary'|'concepts'|'quiz'|'exercises' }
+exports.aiProcessItem = async (req, res) => {
+  console.log('[AI] hit', req.params, req.body);
+  try {
+    if (!openai || !process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'OPENAI_API_KEY missing or OpenAI SDK not installed.' });
+    }
+    const teacherId = req.user.userId;
+    const { itemId } = req.params;
+    const mode = String(req.body?.mode || '').toLowerCase();
+    if (!['summary','concepts','quiz','exercises'].includes(mode)) {
+      return res.status(400).json({ error: 'Invalid mode' });
+    }
+
+    // get item by ID only (section param may be stale)
+    const { data: item, error } = await supabase
+      .from('library_items')
+      .select('id, section_id, name, url, kind')
+      .eq('id', itemId)
+      .single();
+    console.log('[AI] item', { error, itemExists: !!item, itemId: req.params.itemId });
+
+    if (error || !item) return res.status(404).json({ error: 'Item not found' });
+
+    // authorize using the item's REAL section
+    await assertOwnsSection(teacherId, item.section_id);
+
+    // try to get text
+    const text = await extractTextFromUrl(item.url, item.kind);
+
+    // build messages (support non-text via image_url)
+    let messages;
+    if (text && text.length > 0) {
+      const clipped = text.slice(0, 60000); // token safety
+      messages = [
+        { role: 'system', content: 'Tu es un assistant pédagogique pour enseignants. Réponds en français.' },
+        { role: 'user', content: buildPrompt(mode, clipped) }
+      ];
+    } else {
+      // non-textual: let the model look at the URL itself (image/video page)
+      messages = [
+        { role: 'system', content: 'Tu es un assistant pédagogique pour enseignants. Réponds en français.' },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: buildPrompt(mode, 'Le contenu est visuel, analyse l’URL fournie.') },
+            { type: 'image_url', image_url: { url: item.url } }
+          ]
+        }
+      ];
+    }
+
+    let out;
+    try {
+      if (mode === 'quiz') {
+        const resp = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          temperature: 0.2,
+          messages,
+          response_format: { type: 'json_object' }
+        });
+        out = JSON.parse(resp.choices[0].message.content || '{"quiz":[]}');
+      } else {
+        const resp = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          temperature: 0.3,
+          messages
+        });
+        out = { markdown: resp.choices[0].message.content || '' };
+      }
+    } catch (err) {
+      const quota = (err?.status === 429) || (err?.code === 'insufficient_quota');
+      if (quota && process.env.AI_MOCK === '1') {
+        out = (mode === 'quiz')
+          ? { quiz: [{ question: 'Exemple (mode démo)', options: ['A','B','C','D'], answerIndex: 0, rationale: 'Démo' }] }
+          : { markdown: `> **Mode démo** — pas de crédit API.\n\nRésumé d’exemple basé sur la ressource.` };
+      } else if (quota) {
+        return res.status(429).json({ error: 'insufficient_quota', message: 'Your OpenAI account has no credits.' });
+      } else {
+        throw err;
+      }
+    }
+
+    res.json({
+      ok: true,
+      item: { id: item.id, name: item.name, kind: item.kind, url: item.url },
+      mode,
+      result: out
+    });
+  } catch (e) {
+    console.error('[aiProcessItem]', e);
+    res.status(500).json({ error: e.message || 'AI failed' });
+  }
+};
+
+/* ===================== AI: save generated result as new resource ===================== */
+// POST /sections/:sectionId/items/:itemId/ai/save
+// body: { mode, target_section_id, filename?, content }  // content: markdown string OR quiz JSON
+exports.aiSaveResult = async (req, res) => {
+  console.log('[AI] hit', req.params, req.body);
+  try {
+    const teacherId = req.user.userId;
+    const { itemId } = req.params;
+    const mode = String(req.body?.mode || '').toLowerCase();
+    const targetSectionId = String(req.body?.target_section_id);
+    const filename = String(req.body?.filename || '').trim();
+    const content = req.body?.content;
+
+    if (!['summary','concepts','quiz','exercises'].includes(mode)) {
+      return res.status(400).json({ error: 'Invalid mode' });
+    }
+    if (!targetSectionId) {
+      return res.status(400).json({ error: 'target_section_id required' });
+    }
+
+    // verify item exists and you own its real section
+    const { data: item, error } = await supabase
+      .from('library_items')
+      .select('id, section_id')
+      .eq('id', itemId)
+      .single();
+    if (error || !item) return res.status(404).json({ error: 'Item not found' });
+    await assertOwnsSection(teacherId, item.section_id);
+
+    // must also own target section
+    const toSec = await assertOwnsSection(teacherId, targetSectionId);
+
+    // infer library & assignment for key structure
+    const { data: lib } = await supabase
+      .from('library_sections')
+      .select('id, library_id')
+      .eq('id', targetSectionId).single();
+    const { data: libRow } = await supabase
+      .from('course_libraries')
+      .select('id, assignment_id')
+      .eq('id', lib.library_id).single();
+
+    // choose default filename & payload
+    let fname = filename;
+    let bodyBuf, contentType;
+    if (mode === 'quiz') {
+      const jsonStr = typeof content === 'string' ? content : JSON.stringify(content || {}, null, 2);
+      fname = fname || 'Quiz.json';
+      bodyBuf = Buffer.from(jsonStr, 'utf-8');
+      contentType = 'application/json';
+    } else {
+      const md = typeof content === 'string' ? content : (content?.markdown || '');
+      fname = fname || (mode === 'summary' ? 'Résumé.md' : mode === 'concepts' ? 'Concepts.md' : 'Exercices.md');
+      bodyBuf = Buffer.from(md, 'utf-8');
+      contentType = 'text/markdown; charset=utf-8';
+    }
+
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Saving requires SUPABASE_SERVICE_KEY (Storage write).' });
+    }
+    const store = supabaseAdmin.storage.from(STORAGE_BUCKET);
+
+    const safe = toStorageSafeName(fname);
+    const key = joinKey(libRow.assignment_id, libRow.id, toSec.id, 'ai', `${Date.now()}-${safe}`);
+
+    const up = await store.upload(key, bodyBuf, { contentType, upsert: false });
+    if (up.error) throw up.error;
+    const pub = store.getPublicUrl(key);
+    const url = pub?.data?.publicUrl;
+
+    // IMPORTANT: use kind = 'other' to satisfy your DB check constraint
+    const { data: created, error: insErr } = await supabase
+      .from('library_items')
+      .insert([{ section_id: targetSectionId, name: safe, url, kind: 'other' }])
+      .select('id, name, url, kind, created_at').single();
+    if (insErr) throw insErr;
+
+    res.status(201).json({ ok: true, item: created });
+  } catch (e) {
+    console.error('[aiSaveResult]', e);
+    res.status(500).json({ error: e.message || 'AI save failed' });
   }
 };

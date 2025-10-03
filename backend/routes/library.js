@@ -46,4 +46,18 @@ router.post(
   ctrl.moveItem
 );
 
+router.post(
+  '/sections/:sectionId/items/:itemId/ai',
+  requireAuth,
+  requireTeacher,
+  ctrl.aiProcessItem
+);
+
+router.post(
+  '/sections/:sectionId/items/:itemId/ai/save',
+  requireAuth,
+  requireTeacher,
+  ctrl.aiSaveResult
+);
+
 module.exports = router;

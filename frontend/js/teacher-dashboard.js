@@ -388,6 +388,7 @@ function renderSections(libraryId, secs) {
               <span class="res-name">${escapeHtml(it.name)}</span>
             </a>
             <div class="res-actions">
+              <button class="icon-btn js-it-ai" title="IA ✨">✨</button>
               <button class="icon-btn js-it-rename" title="Renommer / Modifier l’URL">✏️</button>
               <button class="icon-btn js-it-delete" title="Supprimer">🗑️</button>
             </div>
@@ -514,6 +515,18 @@ function bindItemActions(list, card) {
       } catch (err) {
         await uiAlert(`Suppression échouée (${err.status || ''})\n${err.message || err}`, { title:'Erreur' });
       }
+    };
+  });
+
+  // AI on item
+  $$('.js-it-ai', list).forEach(act => {
+    act.onclick = () => {
+      const row = act.closest('.res-row');
+      const itemId = row.dataset.item;
+      const sectionId = card.dataset.section;
+      $('#ai-menu-section-id').value = sectionId;
+      $('#ai-menu-item-id').value = itemId;
+      openDlg('#dlg-ai-menu');
     };
   });
 }
@@ -756,6 +769,115 @@ function uiAlert(message, { title='Information', okText='OK' } = {}) {
   });
 }
 
+
+/* ================= AI dialogs & API calls ================= */
+(function bindAiMenu() {
+  const form = $('#form-ai-menu');
+  if (!form || form.dataset.bound) return;
+  form.dataset.bound = '1';
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const sectionId = $('#ai-menu-section-id').value;
+    const itemId = $('#ai-menu-item-id').value;
+    const mode = (form.querySelector('input[name="ai-mode"]:checked')?.value) || 'summary';
+    closeDlg('#dlg-ai-menu');
+
+    try {
+      const res = await api(`${LIB_BASE}/sections/${sectionId}/items/${itemId}/ai`, {
+        method: 'POST',
+        body: { mode }
+      });
+      await showAiPreview(sectionId, itemId, mode, res.result);
+    } catch (err) {
+      const msg = (err.status === 429)
+        ? 'Crédits OpenAI épuisés. Ajoutez une carte sur la plateforme OpenAI ou mettez AI_MOCK=1 dans votre .env pour activer le mode démo.'
+        : (err.message || err);
+      await uiAlert(`Génération IA échouée (${err.status || ''})\n${msg}`, { title: 'Erreur' });
+    }
+  });
+})();
+
+async function showAiPreview(sectionId, itemId, mode, result) {
+  // fill target sections select
+  const libId = state.activeLibrary?.id;
+  const sel = $('#ai-prev-target-section');
+  sel.innerHTML = '';
+  (state.sections || []).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id; opt.textContent = s.title || `Dossier ${s.id}`;
+    if (String(s.id) === String(sectionId)) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // filename by default
+  const nameMap = { summary:'Résumé.md', concepts:'Concepts.md', exercises:'Exercices.md', quiz:'Quiz.json' };
+  $('#ai-prev-filename').value = nameMap[mode];
+
+  // render preview
+  $('#ai-prev-title').textContent = `Résultat IA — ${mode === 'summary' ? 'Résumé' : mode === 'concepts' ? 'Concepts' : mode === 'exercises' ? 'Exercices' : 'Quiz'}`;
+  const prevMd = $('#ai-prev-md');
+  const prevJson = $('#ai-prev-json');
+  prevMd.classList.add('hidden'); prevJson.classList.add('hidden');
+
+  if (mode === 'quiz') {
+    prevJson.textContent = JSON.stringify(result, null, 2);
+    prevJson.classList.remove('hidden');
+    $('#ai-prev-hint').textContent = 'Format JSON (QCM).';
+  } else {
+    prevMd.innerText = (result?.markdown || '').trim();
+    prevMd.classList.remove('hidden');
+    $('#ai-prev-hint').textContent = 'Markdown — vous pouvez copier/télécharger ou insérer dans un dossier.';
+  }
+
+  // bind COPY/DOWNLOAD/SAVE
+  const btnCopy = $('#ai-prev-copy');
+  const btnDl   = $('#ai-prev-download');
+  const form    = $('#form-ai-preview');
+
+  btnCopy.onclick = async () => {
+    const text = mode === 'quiz' ? JSON.stringify(result, null, 2) : (result?.markdown || '');
+    await navigator.clipboard.writeText(text);
+    await uiAlert('Copié dans le presse-papiers.', { title: 'Info' });
+  };
+
+  btnDl.onclick = () => {
+    const text = mode === 'quiz' ? JSON.stringify(result, null, 2) : (result?.markdown || '');
+    const blob = new Blob([text], { type: mode === 'quiz' ? 'application/json' : 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = $('#ai-prev-filename').value || nameMap[mode];
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const target_section_id = $('#ai-prev-target-section').value;
+      const filename = ($('#ai-prev-filename').value || nameMap[mode]).trim();
+      const content = (mode === 'quiz') ? result : (result?.markdown || '');
+      const payload = { mode, target_section_id, filename, content };
+      const save = await api(`${LIB_BASE}/sections/${sectionId}/items/${itemId}/ai/save`, {
+        method: 'POST',
+        body: payload
+      });
+      closeDlg('#dlg-ai-preview');
+      // refresh target section
+      const btn = $(`[data-section="${target_section_id}"] .js-load-items`);
+      const list = $(`#res-list-${target_section_id}`);
+      if (list) list.dataset.loaded = '0';
+      if (btn) btn.click();
+      await uiAlert('Inséré dans le cours ✅', { title: 'IA' });
+    } catch (err) {
+      await uiAlert(`Enregistrement échoué (${err.status || ''})\n${err.message || err}`, { title: 'Erreur' });
+    }
+  };
+
+  openDlg('#dlg-ai-preview');
+}
+
+
 /* ---------- utils ---------- */
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -763,3 +885,5 @@ function escapeHtml(s) {
 function escapeAttr(s) {
   return String(s ?? '').replace(/"/g, '&quot;');
 }
+
+
