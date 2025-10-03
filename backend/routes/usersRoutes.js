@@ -1,15 +1,15 @@
 'use strict';
 
 const router = require('express').Router();
-const auth = require('../middleware/authMiddleware');
+const requireAuth = require('../middleware/authMiddleware');
 const {
   getProfile,
   listTeachers,
   listClassmates,
 } = require('../controllers/usersController');
 
-router.get('/me', auth, getProfile);
-router.get('/teachers', auth, listTeachers);
-router.get('/classmates', auth, listClassmates);
+router.get('/me', requireAuth, getProfile);
+router.get('/teachers', requireAuth, listTeachers);
+router.get('/classmates', requireAuth, listClassmates);
 
 module.exports = router;

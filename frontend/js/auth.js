@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector("form");
 
   const toast = (message, type) => {
     if (!message) return;
@@ -9,36 +8,30 @@ document.addEventListener("DOMContentLoaded", () => {
       window.alert(message);
     }
   };
+// frontend/js/auth.js
+const form = document.getElementById("login-form");
+const errorBox = document.getElementById("login-error");
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.textContent = "";
 
-    const email = e.target.email.value;
-    const password = e.target.password.value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-    try {
-      const res = await fetch("/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
       if (res.ok) {
         // ✅ Save token & user data
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-
-        const loginName = [data.user?.first_name, data.user?.last_name]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-        if (loginName) {
-          localStorage.setItem("user_profile_name", loginName);
-        } else if (data.user?.first_name) {
-          localStorage.setItem("user_profile_name", data.user.first_name);
-        }
 
         // ✅ Redirect based on role
         if (data.user.role === "admin") {
@@ -48,14 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (data.user.role === "student") {
           window.location.href = "../pages/student-dashboard.html";
         } else {
-          toast("Rôle inconnu", "error");
+          alert("Unknown role");
         }
       } else {
-        toast(data.message || "Connexion échouée", "error");
+        alert(data.message || "Login failed");
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast("Erreur réseau lors de la connexion", "error");
     }
   });
 });

@@ -2102,3 +2102,118 @@ body.media-sidebar-open {
     max-width: none;
   }
 }
+
+
+/*-----------------------------------------TEACHER CSS----------------------------------------------------------*/
+/* --- Mes Cours — Reddit-inspired clean UI ------------------------------- */
+.courses-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.courses-header .left h2 { margin: 0; }
+.courses-header .meta { margin-top: 2px; font-size: 0.9rem; }
+
+.actions-wrap {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+
+/* Search */
+.search-wrap {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #f6f7f8; border: 1px solid #e6e7e8;
+  padding: 6px 10px; border-radius: 999px;
+}
+.search-wrap input {
+  border: none; background: transparent; outline: none; width: 220px;
+}
+.search-wrap i { color: #6b7280; }
+
+/* Segmented control */
+.segmented {
+  display: inline-flex; border: 1px solid #e6e7e8; border-radius: 999px; overflow: hidden; background: #fff;
+}
+.segmented.small .segmented-item { padding: 6px 10px; font-size: 0.9rem; }
+.segmented-item { border: none; background: transparent; padding: 8px 14px; cursor: pointer; }
+.segmented-item.active { background: #e9eefb; color: #1f4fd6; font-weight: 600; }
+
+/* Sort select */
+.select-wrap {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #fff; border: 1px solid #e6e7e8; border-radius: 10px; padding: 6px 10px;
+}
+.select-wrap select { border: none; background: transparent; outline: none; }
+
+/* View toggle */
+.view-toggle { display: inline-flex; border: 1px solid #e6e7e8; border-radius: 10px; overflow: hidden; }
+.view-btn { border: none; background: #fff; padding: 6px 10px; cursor: pointer; }
+.view-btn.active { background: #f2f3f5; }
+
+/* Grid/List containers */
+.course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.course-list { display: flex; flex-direction: column; gap: 10px; }
+
+/* Course card */
+.course-card {
+  background: #fff; border: 1px solid #e6e7e8; border-radius: 12px; padding: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: grid; gap: 8px;
+}
+.course-card .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.course-card .title { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.75rem; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid #e6e7e8; background: #f8fafc; color: #475569;
+}
+.badge.green  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.badge.orange { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+
+.course-card .meta { color: #6b7280; font-size: 0.9rem; }
+.course-card .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.course-card .actions .btn {
+  border: 1px solid #e6e7e8; background: #fff; border-radius: 10px; padding: 6px 10px; cursor: pointer;
+}
+.course-card .actions .btn-primary {
+  border-color: #c7d2fe; background: #e0e7ff; color: #1e3a8a; font-weight: 600;
+}
+
+/* Skeletons */
+.skeleton {
+  position: relative; min-height: 120px; overflow: hidden;
+  background: linear-gradient(90deg,#f3f4f6 25%,#edeef1 37%,#f3f4f6 63%); background-size: 400% 100%;
+  animation: ske 1.4s ease infinite; border-radius: 12px;
+}
+@keyframes ske { 0%{background-position: 100% 50%} 100%{background-position: 0 50%} }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 40px 10px; }
+.empty-state .empty-illustration { font-size: 44px; margin-bottom: 10px; }
+.hidden { display: none !important; }
+
+/* Dialog (native <dialog>) */
+.course-dialog::backdrop { background: rgba(0,0,0,0.3); }
+.course-dialog { border: none; padding: 0; border-radius: 14px; width: min(640px, 92vw); }
+.course-form { padding: 16px; display: grid; gap: 14px; }
+.dialog-header { display: flex; align-items: center; justify-content: space-between; }
+.icon-btn { border: none; background: transparent; cursor: pointer; font-size: 1.2rem; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: grid; gap: 6px; }
+.field input, .field select {
+  border: 1px solid #e6e7e8; border-radius: 8px; padding: 8px 10px; outline: none;
+}
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.btn-secondary, .btn-primary {
+  padding: 8px 12px; border-radius: 10px; border: 1px solid #e6e7e8; background: #fff; cursor: pointer;
+}
+.btn-primary { background: #1f4fd6; color: #fff; border-color: #1f4fd6; }
+.btn-secondary:hover { background: #f3f4f6; }
+.btn-primary:hover { filter: brightness(0.95); }
+
+/* Responsive */
+@media (max-width: 800px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .search-wrap input { width: 150px; }
+}

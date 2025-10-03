@@ -1,18 +1,18 @@
 const router = require('express').Router();
 const postsController = require('../controllers/postsController');
-const auth = require('../middleware/authMiddleware');
+const requireAuth = require('../middleware/authMiddleware');
 const { uploadMediaArray } = require('../middleware/uploadMiddleware');
 
 // GET /api/posts → list published posts visible to user
-router.get('/', auth, postsController.listPosts);
-router.get('/:postId/comments', auth, postsController.listComments);
-router.post('/:postId/comments', auth, postsController.addComment);
-router.post('/comments/:commentId/votes', auth, postsController.voteComment);
-router.post('/:postId/votes', auth, postsController.votePost);
-router.delete('/:postId/comments/:commentId', auth, postsController.deleteComment);
-router.delete('/:postId', auth, postsController.deletePost);
+router.get('/', requireAuth, postsController.listPosts);
+router.get('/:postId/comments', requireAuth, postsController.listComments);
+router.post('/:postId/comments', requireAuth, postsController.addComment);
+router.post('/comments/:commentId/votes', requireAuth, postsController.voteComment);
+router.post('/:postId/votes', requireAuth, postsController.votePost);
+router.delete('/:postId/comments/:commentId', requireAuth, postsController.deleteComment);
+router.delete('/:postId', requireAuth, postsController.deletePost);
 
 // POST /api/posts  (expects <input name="media" multiple>)
-router.post('/', auth, uploadMediaArray, postsController.addPost);
+router.post('/', requireAuth, uploadMediaArray, postsController.addPost);
 
 module.exports = router;

@@ -1,14 +1,14 @@
 'use strict';
 
 const router = require('express').Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const requireAuth = require('../middleware/authMiddleware');
 const {
   getSubjectsForSchool,
   getSubjectsMine,
 } = require('../controllers/subjectsController');
 
 // GET /subjects
-router.get('/', authMiddleware, getSubjectsForSchool);
-router.get('/mine', authMiddleware, getSubjectsMine);
+router.get('/', requireAuth, getSubjectsForSchool);
+router.get('/mine', requireAuth, getSubjectsMine);
 
 module.exports = router;

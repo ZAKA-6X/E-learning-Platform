@@ -1,44 +1,49 @@
-    require('dotenv').config();
+// backend/app.js
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
 
-    const express = require('express');
-    const path = require('path');
-    const bodyParser = require('body-parser');
-    const subjectsRoutes = require('./routes/subjectsRoutes');
-    const classesRoutes = require('./routes/classesRoutes');
-    const postsRoutes = require('./routes/postsRoutes');
-    const fileRoutes = require('./routes/fileRoutes');
-    const usersRoutes = require('./routes/usersRoutes');
-    const uploadsDir = path.join(__dirname, '../uploads');
-    const app = express();
-    const port = process.env.PORT;
+const authRoutes = require('./routes/authRoutes');
+const teacherRoutes = require('./routes/teacher');
+const libraryRoutes = require('./routes/library');
+const postsRoutes = require('./routes/postsRoutes');
+const subjectsRoutes = require('./routes/subjectsRoutes');
+const classesRoutes = require('./routes/classesRoutes');
+const usersRoutes = require('./routes/usersRoutes');
 
-    // Middleware
-    app.use(express.static(path.join(__dirname, '../frontend')));
-    app.use(express.json());
-    app.use(bodyParser.urlencoded({ extended: true }));
-    app.use('/uploads', express.static(uploadsDir));
+const app = express();
 
-    // Routes
-    app.use('/', require('./routes/authRoutes'));
-    if (typeof fileRoutes === 'function') {
-        app.use('/', fileRoutes);
-    }
-    app.use('/admin', require('./routes/adminRoutes'));
-    app.use('/todos', require('./routes/todosRoutes'));
-    app.use('/subjects', subjectsRoutes);
-    app.use('/classes', classesRoutes);
-    app.use('/api/posts', postsRoutes);
-    app.use('/api/users', usersRoutes);
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-    // Redirect root to login   
-    app.get('/login', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/pages/login.html'));
-    });
+// Serve static frontend assets
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-    app.get('/', (req, res) => {
-        res.redirect('/login');
-    });
+// Landing pages
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/pages/login.html'));
+});
 
-    app.listen(port, () => {
-        console.log(`Server running on http://localhost:${port}`);
-    });
+app.get('/teacher', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, '../frontend/pages/teacher-dashboard.html'));
+});
+
+// APIs
+app.use('/api/auth', authRoutes);
+app.use('/api/teacher', teacherRoutes);
+app.use('/api/teacher', libraryRoutes);
+app.use('/api/posts', postsRoutes);
+app.use('/api/subjects', subjectsRoutes);
+app.use('/api/classes', classesRoutes);
+app.use('/api/users', usersRoutes);
+
+// Basic health check
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});

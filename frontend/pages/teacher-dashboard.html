@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ClicaEd - Tableau de bord Enseignant</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/teacher.css" />
+    <link rel="icon" type="image/png" href="/assets/icon.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  </head>
+
+  <body>
+    <!-- Header -->
+    <header class="header" id="header">
+      <div class="header-brand">
+        <button class="mobile-nav-toggle" type="button" aria-controls="left-sidebar" aria-expanded="false">
+          <span class="sr-only">Ouvrir le menu</span>
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+
+        <a class="logo" id="profile-home-link" href="/teacher">
+          <img src="/assets/logo.png" alt="Logo ClicaEd" />
+          <span>ClicaEd</span>
+        </a>
+      </div>
+
+      <div class="search-bar">
+        <input id="global-search-input" type="search" placeholder="Rechercher…" aria-label="Rechercher" autocomplete="off"/>
+      </div>
+
+      <div class="user-menu">
+        <a class="user-avatar" href="/pages/profile.html" title="Voir mon profil" aria-label="Voir mon profil">U</a>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container" id="main-container">
+      <!-- Left Sidebar -->
+      <nav class="left-sidebar" id="left-sidebar" aria-label="Navigation principale">
+        <a href="#" class="sidebar-item active" id="nav-cours" title="Mes cours" data-target="cours">
+          <span class="sidebar-icon"><i class="fa-solid fa-book"></i></span>
+          Mes cours
+        </a>
+      </nav>
+
+      <!-- Centered Content Wrapper -->
+      <div class="centered-content" id="centered-content">
+        <div class="content-container" id="content-container">
+          <main class="content-area" id="content-area">
+            <!-- MES COURS -->
+            <section id="cours" class="content-section active" aria-live="polite">
+              <header class="courses-header">
+                <div class="left">
+                  <h2 id="courses-title">📘 Mes cours</h2>
+                  <div class="meta muted" id="courses-count">—</div>
+                </div>
+
+                <div class="right actions-wrap">
+                  <!-- global search (optional, non branché) -->
+                  <div class="search-wrap">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <input id="course-search" type="search" placeholder="Rechercher dans mes cours…" autocomplete="off" aria-label="Recherche mes cours"/>
+                  </div>
+
+                  <!-- view layout toggle -->
+                  <div class="view-toggle" title="Vue">
+                    <button class="view-btn active" data-view="grid" aria-pressed="true"><i class="fa-solid fa-grip"></i></button>
+                    <button class="view-btn" data-view="list" aria-pressed="false"><i class="fa-solid fa-list"></i></button>
+                  </div>
+                </div>
+              </header>
+
+              <!-- Context Summary Chips (only Class & Subject) -->
+              <div id="context-summary" class="context-summary" hidden>
+                <div class="chips" role="status" aria-live="polite">
+                  <span class="chip" id="chip-class" hidden></span>
+                  <span class="chip" id="chip-subject" hidden></span>
+                </div>
+                <button class="btn-secondary small" id="btn-edit-context" hidden>
+                  <i class="fa-solid fa-pen"></i> Modifier
+                </button>
+              </div>
+
+              <!-- RAIL: MES CLASSES -->
+              <section id="rail-offerings" class="rail active" aria-labelledby="tab-offerings">
+                <!-- Selector toolbar (class & subject only) -->
+                <div class="toolbar row-wrap" id="offerings-toolbar">
+                  <div class="select-wrap">
+                    <i class="fa-solid fa-users-rectangle" aria-hidden="true"></i>
+                    <select id="filter-class" title="Classe" data-filter="class">
+                      <option value="">Classe&nbsp;: toutes</option>
+                    </select>
+                  </div>
+
+                  <div class="select-wrap">
+                    <i class="fa-solid fa-book" aria-hidden="true"></i>
+                    <select id="filter-subject" title="Matière" data-filter="subject">
+                      <option value="">Matière&nbsp;: toutes</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="offerings-container" class="course-grid" data-rail-content="offerings">
+                  <!-- Skeletons -->
+                  <div class="course-card skeleton" aria-hidden="true"></div>
+                  <div class="course-card skeleton" aria-hidden="true"></div>
+                  <div class="course-card skeleton" aria-hidden="true"></div>
+                </div>
+
+                <div id="offerings-empty" class="empty-state hidden" role="status" aria-live="polite">
+                  <div class="empty-illustration" aria-hidden="true">🧑‍🏫</div>
+                  <h3>Aucune classe assignée</h3>
+                  <p class="muted">Demandez à l’administrateur de vous assigner à une ou plusieurs classes.</p>
+                </div>
+              </section>
+
+              <!-- DETAIL: OFFERING (class view) -->
+              <section id="offering-detail" class="course-detail hidden" aria-live="polite" data-scope="offering">
+                <div class="course-detail__hero">
+                  <div class="course-detail__hero-top">
+                    <button type="button" class="btn-secondary" id="offering-detail-back">
+                      <i class="fa-solid fa-arrow-left"></i>
+                      Retour à mes classes
+                    </button>
+                    <span class="course-detail__status" id="offering-detail-status">—</span>
+                  </div>
+
+                  <div class="course-detail__hero-main">
+                    <div class="course-detail__icon" aria-hidden="true">
+                      <i class="fa-solid fa-chalkboard-user"></i>
+                    </div>
+                    <div class="course-detail__meta">
+                      <div class="course-detail__breadcrumb" id="offering-detail-breadcrumb">—</div>
+                      <h3 class="course-detail__title" id="offering-detail-title">Matière – Classe</h3>
+                      <p class="course-detail__subtitle" id="offering-detail-subtitle">Élèves&nbsp;: 0</p>
+                    </div>
+
+                    <div class="course-detail__search">
+                      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                      <input type="search" id="offering-detail-search" placeholder="Rechercher dans cette classe…" autocomplete="off" aria-label="Rechercher dans cette classe"/>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="course-detail__body">
+                  <div id="offering-detail-loading" class="course-detail__loading">
+                    <div class="loader" aria-hidden="true"></div>
+                    <p>Chargement…</p>
+                  </div>
+
+                  <!-- CONTENT (detail) -->
+                  <div id="offering-detail-content" class="course-detail__content hidden">
+
+                    <!-- 🆕 COURSES under this offering -->
+                    <section class="course-block" id="courses-host">
+                      <header class="course-block__header">
+                        <div class="course-block__title-wrap">
+                          <h4>Mes cours</h4>
+                          <span id="courses-badge" class="course-block__count" hidden>0</span>
+                        </div>
+                        <button class="btn-primary" id="btn-create-course">
+                          <i class="fa-solid fa-plus"></i> Créer un cours
+                        </button>
+                      </header>
+                      <div id="courses-list" class="course-grid"></div>
+                      <div id="courses-empty" class="course-block__empty hidden">
+                        <p>Aucun cours. Créez votre premier cours.</p>
+                      </div>
+                    </section>
+
+                    <!-- FOLDERS & RESOURCES (for the selected course) -->
+                    <section class="course-block" id="lib-host">
+                      <header class="course-block__header">
+                        <div class="course-block__title-wrap">
+                          <h4 id="lib-title">Dossiers du cours</h4>
+                          <span id="lib-badge" class="course-block__count" hidden>0</span>
+                        </div>
+                        <button class="btn-secondary" id="btn-new-section" disabled>
+                          <i class="fa-solid fa-folder-plus"></i> Ajouter un dossier
+                        </button>
+                      </header>
+
+                      <div id="lib-sections" class="resource-grid" hidden></div>
+                      <div id="lib-sections-empty" class="course-block__empty hidden">
+                        <p>Aucun dossier. Créez votre premier dossier.</p>
+                      </div>
+                    </section>
+
+                    <!-- Dialogs -->
+                    <dialog id="dlg-create-lib" class="course-dialog">
+                      <form id="form-create-lib" class="course-form" method="dialog">
+                        <div class="dialog-header">
+                          <h3>Nouvelle bibliothèque</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-create-lib" title="Fermer" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid">
+                          <label class="field" style="grid-column: span 2;">
+                            <span>Titre *</span>
+                            <input type="text" id="inp-lib-title" required placeholder="ex: Bibliothèque du cours"/>
+                          </label>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" data-close="dlg-create-lib">Annuler</button>
+                          <button type="submit" class="btn-primary">Créer</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <dialog id="dlg-create-section" class="course-dialog">
+                      <form id="form-create-section" class="course-form" method="dialog">
+                        <div class="dialog-header">
+                          <h3>Nouveau dossier</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-create-section" title="Fermer" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid">
+                          <label class="field" style="grid-column: span 2;">
+                            <span>Titre *</span>
+                            <input type="text" id="inp-section-title" required placeholder="ex: Chapitre 1 — Introduction"/>
+                          </label>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" data-close="dlg-create-section">Annuler</button>
+                          <button type="submit" class="btn-primary">Créer</button>
+                        </div>
+                      </form>
+                    </dialog>
+                    
+                    <dialog id="dlg-add-item" class="course-dialog">
+                      <form id="form-add-item" class="course-form" method="dialog">
+                        <input type="hidden" id="inp-item-section-id" />
+                        <div class="dialog-header">
+                          <h3>Ajouter une ressource</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-add-item" title="Fermer" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid">
+                          <label class="field">
+                            <span>Type *</span>
+                            <select id="inp-item-kind" required>
+                              <option value="pdf">PDF</option>
+                              <option value="image">Image</option>
+                              <option value="video">Vidéo</option>
+                              <option value="link">Lien</option>
+                              <option value="other">Autre</option>
+                            </select>
+                          </label>
+                          <label class="field">
+                            <span>Titre *</span>
+                            <input type="text" id="inp-item-name" required placeholder="ex: Cours PDF"/>
+                          </label>
+                          <label class="field" style="grid-column: span 2;">
+                            <span>URL *</span>
+                            <input type="url" id="inp-item-url" required placeholder="Collez l’URL publique (upload plus tard)"/>
+                          </label>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" data-close="dlg-add-item">Annuler</button>
+                          <button type="submit" class="btn-primary">Ajouter</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <dialog id="dlg-upload" class="course-dialog">
+                      <form id="form-upload" class="course-form" method="dialog">
+                        <input type="hidden" id="up-section-id" />
+                        <div class="dialog-header">
+                          <h3>Ajouter des fichiers</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-upload" title="Fermer" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid">
+                          <label class="field" style="grid-column: span 2;">
+                            <span>Fichiers</span>
+                            <input id="up-files" type="file" multiple />
+                          </label>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" data-close="dlg-upload">Annuler</button>
+                          <button id="btn-upload-go" class="btn-primary">Uploader</button>
+                        </div>
+                      </form>
+                    </dialog>
+                    <dialog id="dlg-confirm" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-confirm">
+                        <div class="dialog-header">
+                          <h3 id="confirm-title">Confirmation</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-confirm" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <p id="confirm-message"></p>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" id="confirm-cancel">Annuler</button>
+                          <button type="submit" class="btn-primary" id="confirm-ok">Confirmer</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <!-- PROMPT (single text input) -->
+                    <dialog id="dlg-prompt" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-prompt">
+                        <div class="dialog-header">
+                          <h3 id="prompt-title">Modifier</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-prompt" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <label class="field">
+                            <span id="prompt-label">Valeur</span>
+                            <input type="text" id="prompt-input" required />
+                          </label>
+                          <p id="prompt-helper" class="muted"></p>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" id="prompt-cancel">Annuler</button>
+                          <button type="submit" class="btn-primary" id="prompt-ok">Enregistrer</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <!-- ALERT (message only) -->
+                    <dialog id="dlg-alert" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-alert">
+                        <div class="dialog-header">
+                          <h3 id="alert-title">Information</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-alert" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <p id="alert-message"></p>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="submit" class="btn-primary" id="alert-ok">OK</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <!-- ===== AI MENU (choose mode) ===== -->
+                    <dialog id="dlg-ai-menu" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-ai-menu">
+                        <div class="dialog-header">
+                          <h3>Génération IA</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-ai-menu" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <input type="hidden" id="ai-menu-section-id" />
+                        <input type="hidden" id="ai-menu-item-id" />
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <label class="radio-row"><input type="radio" name="ai-mode" value="summary" checked> Résumé</label>
+                          <label class="radio-row"><input type="radio" name="ai-mode" value="concepts"> Concepts clés</label>
+                          <label class="radio-row"><input type="radio" name="ai-mode" value="quiz"> Quiz (QCM)</label>
+                          <label class="radio-row"><input type="radio" name="ai-mode" value="exercises"> Exercices + solutions</label>
+                          <p class="muted">Choisissez le type de génération pour cette ressource.</p>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" data-close="dlg-ai-menu">Annuler</button>
+                          <button type="submit" class="btn-primary">Générer</button>
+                        </div>
+                      </form>
+                    </dialog>
+
+                    <!-- ===== AI PREVIEW (result & save) ===== -->
+                    <dialog id="dlg-ai-preview" class="course-dialog">
+                      <form method="dialog" class="course-form" id="form-ai-preview">
+                        <div class="dialog-header">
+                          <h3 id="ai-prev-title">Résultat IA</h3>
+                          <button type="button" class="icon-btn" data-close="dlg-ai-preview" aria-label="Fermer">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1fr;">
+                          <pre id="ai-prev-json" class="ai-preview hidden"></pre>
+                          <div id="ai-prev-md" class="ai-preview"></div>
+                          <div class="muted" id="ai-prev-hint"></div>
+                          <label class="field">
+                            <span>Enregistrer dans le dossier</span>
+                            <select id="ai-prev-target-section"></select>
+                          </label>
+                          <label class="field">
+                            <span>Nom du fichier</span>
+                            <input id="ai-prev-filename" type="text" placeholder="Résumé.md / Quiz.json / Exercices.md"/>
+                          </label>
+                        </div>
+                        <div class="dialog-actions">
+                          <button type="button" class="btn-secondary" id="ai-prev-copy">Copier</button>
+                          <button type="button" class="btn-secondary" id="ai-prev-download">Télécharger</button>
+                          <button type="submit" class="btn-primary" id="ai-prev-save">Insérer dans le cours</button>
+                        </div>
+                      </form>
+                    </dialog>
+                    
+                  </div>
+
+                  <div id="offering-detail-error" class="course-detail__error hidden" role="alert">
+                    <p>Impossible de charger cette classe.</p>
+                  </div>
+                </div>
+              </section>
+            </section>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <!-- JS -->
+    <script src="/js/teacher-dashboard.js?v=20250930-2" defer></script>
+  </body>
+</html>
