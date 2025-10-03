@@ -6,12 +6,13 @@
     <title>ClicaEd - Tableau de bord Enseignant</title>
 
     <!-- Styles -->
+    <link rel="stylesheet" href="/css/main.css" />
     <link rel="stylesheet" href="/css/teacher.css" />
     <link rel="icon" type="image/png" href="/assets/icon.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   </head>
 
-  <body>
+  <body data-dashboard="teacher" data-role="teacher">
     <!-- Header -->
     <header class="header" id="header">
       <div class="header-brand">
@@ -30,8 +31,38 @@
         <input id="global-search-input" type="search" placeholder="Rechercher…" aria-label="Rechercher" autocomplete="off"/>
       </div>
 
-      <div class="user-menu">
-        <a class="user-avatar" href="/pages/profile.html" title="Voir mon profil" aria-label="Voir mon profil">U</a>
+      <div class="user-menu" id="user-menu">
+        <div
+          class="user-menu-trigger"
+          data-user-menu
+          data-profile-url="/pages/profile.html"
+        >
+          <button
+            type="button"
+            class="user-avatar"
+            id="user-avatar"
+            title="Mon compte"
+            data-user-menu-toggle
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            U
+          </button>
+          <div
+            class="user-menu-panel"
+            data-user-menu-panel
+            role="menu"
+            aria-label="Actions utilisateur"
+            hidden
+          >
+            <button type="button" class="user-menu-item" data-action="profile" role="menuitem">
+              Profil
+            </button>
+            <button type="button" class="user-menu-item" data-action="logout" role="menuitem">
+              Déconnexion
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -416,6 +447,7 @@
     </div>
 
     <!-- JS -->
+    <script src="/js/navbar.js" defer></script>
     <script src="/js/teacher-dashboard.js?v=20250930-2" defer></script>
   </body>
 </html>
