@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!feedEl) return;
 
+  const SUBJECTS_API_BASE = "/api/subjects";
+
   const state = {
     posts: [],
     comments: new Map(), // postId -> { items: Comment[] }
@@ -256,12 +258,12 @@ document.addEventListener("DOMContentLoaded", () => {
   async function ensureSubjectsLoaded() {
     if (state.subjectsLoaded) return;
     try {
-      const res = await authedFetch("/subjects/mine");
+      const res = await authedFetch(`${SUBJECTS_API_BASE}/mine`);
       const json = await res.json().catch(() => ({}));
       state.subjects = Array.isArray(json?.items) ? json.items : [];
       state.subjectsLoaded = true;
     } catch (e) {
-      console.warn("[posts-display] /subjects/mine failed", e);
+      console.warn("[posts-display] /api/subjects/mine failed", e);
       state.subjects = [];
       state.subjectsLoaded = true;
     }

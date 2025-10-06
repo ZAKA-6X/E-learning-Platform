@@ -12,6 +12,17 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB per file
 });
 
+/* ---------------- Student (read-only) ---------------- */
+router.get('/student/courses', requireAuth, ctrl.listStudentCourses);
+router.get('/student/libraries/:libraryId', requireAuth, ctrl.getStudentLibrary);
+router.get('/student/courses/:courseId/exercises', requireAuth, ctrl.listStudentExercises);
+router.post(
+  '/student/courses/:courseId/exercises/:itemId/submissions',
+  requireAuth,
+  upload.single('submission'),
+  ctrl.submitStudentExercise
+);
+
 /* ---------------- Libraries (courses) under an offering/assignment ---------------- */
 router.get('/offerings/:assignmentId/libraries', requireAuth, requireTeacher, ctrl.listLibraries);
 router.post('/offerings/:assignmentId/libraries', requireAuth, requireTeacher, ctrl.createLibrary);

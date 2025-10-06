@@ -21,6 +21,8 @@ try {
 }
 
 const STORAGE_BUCKET = process.env.COURSE_BUCKET || 'course-files';
+const SUBMISSION_BUCKET = process.env.STUDENT_SUBMISSIONS_BUCKET || 'student-submissions';
+const HOMEWORK_KEYWORDS = ['exerc', 'devoir'];
 
 /* ---------- OpenAI ---------- */
 let openai = null;
@@ -108,6 +110,205 @@ function joinKey(...parts) {
     .replace(/^\//, '');
 }
 
+function matchesHomeworkKeyword(value) {
+  if (!value) return false;
+  const lower = String(value).toLowerCase();
+  return HOMEWORK_KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
+function isExerciseResource(section, item) {
+  return (
+    matchesHomeworkKeyword(section?.title) ||
+    matchesHomeworkKeyword(item?.name) ||
+    matchesHomeworkKeyword(item?.kind)
+  );
+}
+
+function formatExerciseSummary(entry = {}) {
+  const total = Number(entry.total) || 0;
+  const submitted = Number(entry.submitted) || 0;
+  return {
+    total,
+    submitted: submitted > total ? total : submitted,
+    pending: total > submitted ? total - submitted : 0,
+  };
+}
+
+function presentSubmission(row) {
+  if (!row) return null;
+  return {
+    id: row.id || null,
+    course_id: row.course_id || null,
+    item_id: row.item_id || null,
+    file_url: row.file_url || null,
+    file_name: row.file_name || null,
+    file_size: row.file_size || null,
+    mime_type: row.mime_type || null,
+    submitted_at: row.submitted_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+async function removeStorageObject(bucket, key) {
+  if (!bucket || !key) return;
+  try {
+    const client = (supabaseAdmin || supabase).storage.from(bucket);
+    const { error } = await client.remove([key]);
+    if (error && error.message && !/object not found/i.test(error.message)) {
+      console.warn('[storage] remove failed', error.message);
+    }
+  } catch (err) {
+    console.warn('[storage] remove exception', err?.message || err);
+  }
+}
+
+function isMissingTableError(err, tableName) {
+  if (!err) return false;
+  const code = err.code || err.status || err.message;
+  if (err.code === '42P01') return true;
+  const msg = String(err.message || err).toLowerCase();
+  return msg.includes('relation') && msg.includes(String(tableName).toLowerCase());
+}
+
+async function loadExerciseData(libraryIds, studentId) {
+  const safeIds = Array.isArray(libraryIds) ? libraryIds.filter(Boolean) : [];
+  const itemsByCourse = new Map();
+  const summaryByCourse = new Map();
+  const submissionsByItem = new Map();
+
+  if (!safeIds.length) {
+    return { itemsByCourse, summaryByCourse, submissionsByItem };
+  }
+
+  const { data: sectionsData, error: sectionsErr } = await supabase
+    .from('library_sections')
+    .select('id, library_id, title')
+    .in('library_id', safeIds);
+
+  if (sectionsErr) {
+    throw new Error(sectionsErr.message || 'Unable to load sections');
+  }
+
+  const sectionRows = Array.isArray(sectionsData) ? sectionsData : [];
+  const sectionIds = sectionRows.map((section) => section.id).filter(Boolean);
+  const sectionsById = new Map(sectionRows.map((section) => [section.id, section]));
+
+  if (!sectionRows.length) {
+    return { itemsByCourse, summaryByCourse, submissionsByItem };
+  }
+
+  let itemRows = [];
+  if (sectionIds.length) {
+    const { data: itemsData, error: itemsErr } = await supabase
+      .from('library_items')
+      .select('id, section_id, name, kind, url, size_bytes, created_at, updated_at')
+      .in('section_id', sectionIds);
+
+    if (itemsErr) {
+      throw new Error(itemsErr.message || 'Unable to load items');
+    }
+    itemRows = Array.isArray(itemsData) ? itemsData : [];
+  }
+
+  let submissionRows = [];
+  if (studentId) {
+    const { data: submissionsData, error: submissionsErr } = await supabase
+      .from('student_exercise_submissions')
+      .select('id, course_id, item_id, file_url, file_name, file_size, mime_type, storage_key, submitted_at, updated_at')
+      .eq('student_id', studentId)
+      .in('course_id', safeIds);
+
+    if (submissionsErr) {
+      if (!isMissingTableError(submissionsErr, 'student_exercise_submissions')) {
+        console.warn('[loadExerciseData] submissions lookup non-fatal', submissionsErr);
+      }
+      submissionRows = [];
+    } else {
+      submissionRows = Array.isArray(submissionsData) ? submissionsData : [];
+      submissionRows.forEach((row) => {
+        if (row?.item_id) submissionsByItem.set(row.item_id, row);
+      });
+    }
+  }
+
+  sectionRows.forEach((section) => {
+    if (!section?.library_id) return;
+    if (!itemsByCourse.has(section.library_id)) {
+      itemsByCourse.set(section.library_id, []);
+    }
+  });
+
+  itemRows.forEach((item) => {
+    const section = sectionsById.get(item.section_id);
+    if (!section || !section.library_id) return;
+    if (!isExerciseResource(section, item)) return;
+    const carrier = itemsByCourse.get(section.library_id) || [];
+    carrier.push({ item, section });
+    itemsByCourse.set(section.library_id, carrier);
+  });
+
+  itemsByCourse.forEach((items, courseId) => {
+    const submitted = items.filter(({ item }) => submissionsByItem.has(item.id)).length;
+    summaryByCourse.set(courseId, formatExerciseSummary({ total: items.length, submitted }));
+  });
+
+  return { itemsByCourse, summaryByCourse, submissionsByItem };
+}
+
+async function fetchStudentCourseContext(studentId, courseId) {
+  const { data: student, error: studentErr } = await supabase
+    .from('users')
+    .select('id, class_id')
+    .eq('id', studentId)
+    .single();
+
+  if (studentErr) {
+    const err = new Error(studentErr.message || 'Unable to resolve student profile');
+    err.code = 'STUDENT_LOOKUP';
+    throw err;
+  }
+
+  if (!student?.class_id) {
+    const err = new Error('Student has no class assigned');
+    err.code = 'NO_CLASS';
+    throw err;
+  }
+
+  const { data: course, error: courseErr } = await supabase
+    .from('course_libraries')
+    .select(`
+      id,
+      assignment_id,
+      title,
+      status,
+      created_at,
+      updated_at,
+      assignment:teacher_assignments!course_libraries_assignment_id_fkey (
+        id,
+        class:classes!teacher_assignments_class_id_fkey ( id, name ),
+        subject:subjects!teacher_assignments_subject_id_fkey ( id, name ),
+        teacher:users!teacher_assignments_teacher_id_fkey ( id, first_name, last_name, email )
+      )
+    `)
+    .eq('id', courseId)
+    .single();
+
+  if (courseErr || !course) {
+    const err = new Error(courseErr?.message || 'Course not found');
+    err.code = 'COURSE_NOT_FOUND';
+    throw err;
+  }
+
+  const assignmentClassId = course?.assignment?.class?.id || course?.assignment?.class_id || null;
+  if (!assignmentClassId || assignmentClassId !== student.class_id) {
+    const err = new Error('Forbidden');
+    err.code = 'FORBIDDEN';
+    throw err;
+  }
+
+  return { student, course };
+}
+
 /** Try to reconstruct the storage object key from a public URL */
 function storageKeyFromPublicUrl(url) {
   try {
@@ -123,6 +324,36 @@ function storageKeyFromPublicUrl(url) {
     if (idx2 >= 0) return path.slice(idx2 + marker2.length);
   } catch (_) {}
   return null;
+}
+
+function simplifyTeacher(row) {
+  if (!row) return null;
+  const first = row.first_name || '';
+  const last = row.last_name || '';
+  const name = [first, last].filter(Boolean).join(' ').trim() || row.email || 'Enseignant';
+  return {
+    id: row.id || null,
+    first_name: first || null,
+    last_name: last || null,
+    email: row.email || null,
+    name,
+  };
+}
+
+function simplifySubject(row) {
+  if (!row) return null;
+  return {
+    id: row.id || null,
+    name: row.name || null,
+  };
+}
+
+function simplifyClass(row) {
+  if (!row) return null;
+  return {
+    id: row.id || null,
+    name: row.name || null,
+  };
 }
 
 /* ---------- Resource content extractors (PDF/DOCX/Text/Link/Image/Video) ---------- */
@@ -859,5 +1090,465 @@ exports.aiSaveResult = async (req, res) => {
   } catch (e) {
     console.error('[aiSaveResult]', e);
     res.status(500).json({ error: e.message || 'AI save failed' });
+  }
+};
+
+/* ===================== Student-facing library endpoints ===================== */
+
+// GET /api/teacher/student/courses (mounted under /api/teacher by routes/library.js as /student/courses)
+exports.listStudentCourses = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { data: student, error: studentErr } = await supabase
+      .from('users')
+      .select('id, class_id')
+      .eq('id', userId)
+      .single();
+
+    if (studentErr) {
+      console.error('[studentLibrary] student lookup', studentErr);
+      return res.status(500).json({ error: 'Unable to resolve student profile' });
+    }
+
+    const classId = student?.class_id || null;
+    if (!classId) {
+      return res.json({ class: null, assignments: [] });
+    }
+
+    const [{ data: classRow }, { data: assignments, error: assignErr }] = await Promise.all([
+      supabase.from('classes').select('id, name').eq('id', classId).single(),
+      supabase
+        .from('teacher_assignments')
+        .select(`
+          id,
+          teacher:users!teacher_assignments_teacher_id_fkey ( id, first_name, last_name, email ),
+          subject:subjects!teacher_assignments_subject_id_fkey ( id, name ),
+          class:classes!teacher_assignments_class_id_fkey ( id, name )
+        `)
+        .eq('class_id', classId)
+        .order('id', { ascending: true })
+    ]);
+
+    if (assignErr) {
+      console.error('[studentLibrary] assignments lookup', assignErr);
+      return res.status(500).json({ error: 'Unable to load teacher assignments' });
+    }
+
+    const assignmentRows = Array.isArray(assignments) ? assignments : [];
+    const assignmentIds = assignmentRows.map((row) => row.id).filter(Boolean);
+
+    let libraries = [];
+    if (assignmentIds.length) {
+      const { data: libsData, error: libsErr } = await supabase
+        .from('course_libraries')
+        .select('id, assignment_id, title, status, created_at, updated_at')
+        .in('assignment_id', assignmentIds)
+        .order('created_at', { ascending: false });
+
+      if (libsErr) {
+        console.error('[studentLibrary] libraries lookup', libsErr);
+        return res.status(500).json({ error: 'Unable to load courses' });
+      }
+      libraries = Array.isArray(libsData) ? libsData : [];
+    }
+
+    let summaryByCourse = new Map();
+    try {
+      const { summaryByCourse: summary } = await loadExerciseData(
+        libraries.map((lib) => lib.id),
+        userId
+      );
+      summaryByCourse = summary;
+    } catch (exerciseErr) {
+      console.error('[studentLibrary] exercise summary', exerciseErr);
+      summaryByCourse = new Map();
+    }
+
+    const libsByAssignment = new Map();
+    libraries.forEach((lib) => {
+      if (!lib || !lib.assignment_id) return;
+      const bucket = libsByAssignment.get(lib.assignment_id) || [];
+      const summary = formatExerciseSummary(summaryByCourse.get(lib.id) || {});
+      bucket.push({
+        id: lib.id,
+        assignment_id: lib.assignment_id,
+        title: lib.title,
+        status: lib.status,
+        created_at: lib.created_at,
+        updated_at: lib.updated_at,
+        exercise_summary: summary,
+      });
+      libsByAssignment.set(lib.assignment_id, bucket);
+    });
+
+    const payload = assignmentRows.map((row) => ({
+      assignment_id: row.id,
+      teacher: simplifyTeacher(row.teacher),
+      subject: simplifySubject(row.subject),
+      class: simplifyClass(row.class),
+      courses: libsByAssignment.get(row.id) || [],
+    }));
+
+    return res.json({
+      class: simplifyClass(classRow || assignmentRows?.[0]?.class || null),
+      assignments: payload,
+    });
+  } catch (err) {
+    console.error('[studentLibrary] list courses error', err);
+    return res.status(500).json({ error: 'Unable to load courses' });
+  }
+};
+
+// GET /student/libraries/:libraryId — sections + items for students (read-only)
+exports.getStudentLibrary = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { libraryId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!libraryId) {
+      return res.status(400).json({ error: 'libraryId required' });
+    }
+
+    const { data: student, error: studentErr } = await supabase
+      .from('users')
+      .select('id, class_id')
+      .eq('id', userId)
+      .single();
+
+    if (studentErr) {
+      console.error('[studentLibrary] student lookup', studentErr);
+      return res.status(500).json({ error: 'Unable to resolve student profile' });
+    }
+
+    if (!student?.class_id) {
+      return res.status(403).json({ error: 'Student has no class assigned' });
+    }
+
+    const { data: library, error: libErr } = await supabase
+      .from('course_libraries')
+      .select('id, assignment_id, title, status, created_at, updated_at')
+      .eq('id', libraryId)
+      .single();
+
+    if (libErr || !library) {
+      return res.status(404).json({ error: 'Library not found' });
+    }
+
+    const { data: assignment, error: assignmentErr } = await supabase
+      .from('teacher_assignments')
+      .select(`
+        id,
+        class_id,
+        teacher:users!teacher_assignments_teacher_id_fkey ( id, first_name, last_name, email ),
+        subject:subjects!teacher_assignments_subject_id_fkey ( id, name )
+      `)
+      .eq('id', library.assignment_id)
+      .single();
+
+    if (assignmentErr || !assignment) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    if (assignment.class_id !== student.class_id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const { data: sectionsData, error: sectionsErr } = await supabase
+      .from('library_sections')
+      .select(`
+        id,
+        title,
+        position,
+        created_at,
+        items:library_items ( id, name, kind, url, size_bytes, position, created_at )
+      `)
+      .eq('library_id', libraryId)
+      .order('position', { ascending: true });
+
+    if (sectionsErr) {
+      console.error('[studentLibrary] sections lookup', sectionsErr);
+      return res.status(500).json({ error: 'Unable to load course content' });
+    }
+
+    const sections = Array.isArray(sectionsData)
+      ? sectionsData.map((section) => ({
+          id: section.id,
+          title: section.title,
+          position: section.position,
+          created_at: section.created_at,
+          items: Array.isArray(section.items)
+            ? section.items
+                .slice()
+                .sort((a, b) => (a?.position || 0) - (b?.position || 0))
+                .map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  kind: item.kind,
+                  url: item.url,
+                  size_bytes: item.size_bytes,
+                  position: item.position,
+                  created_at: item.created_at,
+                }))
+            : [],
+        }))
+      : [];
+
+    return res.json({
+      library: {
+        id: library.id,
+        assignment_id: library.assignment_id,
+        title: library.title,
+        status: library.status,
+        created_at: library.created_at,
+        updated_at: library.updated_at,
+        teacher: simplifyTeacher(assignment.teacher),
+        subject: simplifySubject(assignment.subject),
+        sections,
+      },
+    });
+  } catch (err) {
+    console.error('[studentLibrary] get library error', err);
+    return res.status(500).json({ error: 'Unable to load library' });
+  }
+};
+
+exports.listStudentExercises = async (req, res) => {
+  const userId = req.user?.id;
+  const { courseId } = req.params;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!courseId) {
+    return res.status(400).json({ error: 'courseId required' });
+  }
+
+  try {
+    let context;
+    try {
+      context = await fetchStudentCourseContext(userId, courseId);
+    } catch (err) {
+      if (err.code === 'STUDENT_LOOKUP') {
+        console.error('[studentExercises] student lookup', err);
+        return res.status(500).json({ error: 'Unable to resolve student profile' });
+      }
+      if (err.code === 'NO_CLASS') {
+        return res.status(403).json({ error: 'Student has no class assigned' });
+      }
+      if (err.code === 'COURSE_NOT_FOUND') {
+        return res.status(404).json({ error: 'Course not found' });
+      }
+      if (err.code === 'FORBIDDEN') {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      throw err;
+    }
+
+    const { course } = context;
+
+    const { itemsByCourse, summaryByCourse, submissionsByItem } = await loadExerciseData([
+      courseId,
+    ], userId);
+
+    const exerciseEntries = itemsByCourse.get(courseId) || [];
+    const summary = formatExerciseSummary(
+      summaryByCourse.get(courseId) || { total: exerciseEntries.length, submitted: 0 }
+    );
+
+    exerciseEntries.sort((a, b) => {
+      const dateA = new Date(a.item.updated_at || a.item.created_at || 0).getTime();
+      const dateB = new Date(b.item.updated_at || b.item.created_at || 0).getTime();
+      return dateB - dateA;
+    });
+
+    const exercises = exerciseEntries.map(({ item, section }) => ({
+      id: item.id,
+      name: item.name,
+      kind: item.kind,
+      url: item.url,
+      size_bytes: item.size_bytes,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      section: section
+        ? {
+            id: section.id,
+            title: section.title,
+          }
+        : null,
+      submission: presentSubmission(submissionsByItem.get(item.id)),
+    }));
+
+    return res.json({
+      course: {
+        id: course.id,
+        assignment_id: course.assignment_id,
+        title: course.title,
+        status: course.status,
+        created_at: course.created_at,
+        updated_at: course.updated_at,
+        teacher: simplifyTeacher(course.assignment?.teacher),
+        subject: simplifySubject(course.assignment?.subject),
+        class: simplifyClass(course.assignment?.class),
+      },
+      summary,
+      exercises,
+    });
+  } catch (err) {
+    console.error('[studentExercises] list error', err);
+    return res.status(500).json({ error: 'Unable to load exercises' });
+  }
+};
+
+exports.submitStudentExercise = async (req, res) => {
+  const userId = req.user?.id;
+  const { courseId, itemId } = req.params;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!courseId || !itemId) {
+    return res.status(400).json({ error: 'courseId and itemId required' });
+  }
+
+  const file = req.file;
+  if (!file) {
+    return res.status(400).json({ error: 'Aucun fichier reçu' });
+  }
+
+  try {
+    let context;
+    try {
+      context = await fetchStudentCourseContext(userId, courseId);
+    } catch (err) {
+      if (err.code === 'STUDENT_LOOKUP') {
+        console.error('[studentExercises] student lookup', err);
+        return res.status(500).json({ error: 'Unable to resolve student profile' });
+      }
+      if (err.code === 'NO_CLASS') {
+        return res.status(403).json({ error: 'Student has no class assigned' });
+      }
+      if (err.code === 'COURSE_NOT_FOUND') {
+        return res.status(404).json({ error: 'Course not found' });
+      }
+      if (err.code === 'FORBIDDEN') {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      throw err;
+    }
+
+    const { data: itemRows, error: itemErr } = await supabase
+      .from('library_items')
+      .select(
+        `id, name, kind, section_id, section:library_sections!library_items_section_id_fkey ( id, title, library_id )`
+      )
+      .eq('id', itemId)
+      .limit(1);
+
+    if (itemErr) {
+      console.error('[studentExercises] item lookup', itemErr);
+      return res.status(500).json({ error: 'Unable to load exercise resource' });
+    }
+
+    const item = Array.isArray(itemRows) && itemRows.length ? itemRows[0] : null;
+    if (!item || !item.section) {
+      return res.status(404).json({ error: 'Exercise not found' });
+    }
+
+    if (item.section.library_id !== courseId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    if (!isExerciseResource(item.section, item)) {
+      return res.status(400).json({ error: 'Cette ressource ne correspond pas à un exercice' });
+    }
+
+    const safeName = toStorageSafeName(file.originalname || 'devoir');
+    const key = joinKey('student', userId, 'course', courseId, `${Date.now()}-${safeName}`);
+    const storageClient = (supabaseAdmin || supabase).storage.from(SUBMISSION_BUCKET);
+
+    const { error: uploadErr } = await storageClient.upload(key, file.buffer, {
+      cacheControl: '3600',
+      contentType: file.mimetype || 'application/octet-stream',
+      upsert: false,
+    });
+
+    if (uploadErr) {
+      console.error('[studentExercises] upload error', uploadErr);
+      return res.status(500).json({ error: 'Échec de l\'envoi du fichier' });
+    }
+
+    const { data: publicData } = storageClient.getPublicUrl(key);
+    const publicUrl = publicData?.publicUrl || null;
+
+    const { data: existingRows, error: existingErr } = await supabase
+      .from('student_exercise_submissions')
+      .select('id, storage_key')
+      .eq('student_id', userId)
+      .eq('course_id', courseId)
+      .eq('item_id', itemId)
+      .limit(1);
+
+    if (existingErr && existingErr.code && existingErr.code !== 'PGRST116') {
+      console.error('[studentExercises] existing lookup', existingErr);
+      await removeStorageObject(SUBMISSION_BUCKET, key);
+      return res.status(500).json({ error: 'Unable to verify existing submission' });
+    }
+
+    const existing = Array.isArray(existingRows) && existingRows.length ? existingRows[0] : null;
+
+    const nowIso = new Date().toISOString();
+    const payload = {
+      student_id: userId,
+      course_id: courseId,
+      item_id: itemId,
+      file_url: publicUrl,
+      file_name: file.originalname || safeName,
+      file_size: file.size ?? null,
+      mime_type: file.mimetype || null,
+      storage_key: key,
+      submitted_at: nowIso,
+      updated_at: nowIso,
+    };
+
+    const { data: upsertRow, error: upsertErr } = await supabase
+      .from('student_exercise_submissions')
+      .upsert(payload, { onConflict: 'student_id,item_id' })
+      .select('id, course_id, item_id, file_url, file_name, file_size, mime_type, storage_key, submitted_at, updated_at')
+      .single();
+
+    if (upsertErr) {
+      console.error('[studentExercises] upsert error', upsertErr);
+      await removeStorageObject(SUBMISSION_BUCKET, key);
+      return res.status(500).json({ error: 'Unable to enregistrer la remise' });
+    }
+
+    if (existing?.storage_key && existing.storage_key !== key) {
+      await removeStorageObject(SUBMISSION_BUCKET, existing.storage_key);
+    }
+
+    let summary = formatExerciseSummary({});
+    try {
+      const { summaryByCourse } = await loadExerciseData([courseId], userId);
+      summary = formatExerciseSummary(summaryByCourse.get(courseId) || {});
+    } catch (err) {
+      console.warn('[studentExercises] summary refresh failed', err?.message || err);
+    }
+
+    const submission = presentSubmission(upsertRow);
+
+    return res.status(existing ? 200 : 201).json({
+      submission,
+      summary,
+    });
+  } catch (err) {
+    console.error('[studentExercises] submit error', err);
+    return res.status(500).json({ error: 'Unable to enregistrer la remise' });
   }
 };

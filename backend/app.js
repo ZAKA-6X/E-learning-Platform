@@ -10,6 +10,7 @@ const postsRoutes = require('./routes/postsRoutes');
 const subjectsRoutes = require('./routes/subjectsRoutes');
 const classesRoutes = require('./routes/classesRoutes');
 const usersRoutes = require('./routes/usersRoutes');
+const todosRoutes = require('./routes/todosRoutes');
 
 const app = express();
 
@@ -33,10 +34,12 @@ app.get('/teacher', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/teacher', libraryRoutes);
+app.use('/api/library', libraryRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/subjects', subjectsRoutes);
 app.use('/api/classes', classesRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/todos', todosRoutes);
 
 // Basic health check
 app.get('/api/health', (_req, res) => {

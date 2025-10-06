@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suivi des exercices</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="../css/main.css" />
+    <script defer src="../js/auth.js"></script>
+    <script defer src="../js/navbar.js"></script>
+    <script defer src="../js/homework-course.js"></script>
+  </head>
+  <body class="homework-course-page">
+    <header class="header homework-course__nav">
+      <div class="header-brand">
+        <a class="logo" href="student-dashboard.html">
+          <img src="../assets/logo.png" alt="Logo ClicaEd" />
+          <span>ClicaEd</span>
+        </a>
+      </div>
+      <div class="homework-course__nav-actions">
+        <button type="button" class="action-button" id="homework-back">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Retour</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="homework-detail" data-homework-root>
+      <section class="homework-detail__header" data-homework-header>
+        <p class="homework-detail__breadcrumb" id="homework-breadcrumb">Cours</p>
+        <h1 class="homework-detail__title" id="homework-title">Chargement…</h1>
+        <p class="homework-detail__meta" id="homework-meta">—</p>
+        <div class="homework-detail__summary" id="homework-summary" hidden>
+          <div class="homework-detail__count">
+            <span id="homework-summary-count">0/0</span>
+            <small>exercices complétés</small>
+          </div>
+          <div class="homework-detail__progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="homework-detail__progress-fill" id="homework-summary-progress"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="homework-detail__body">
+        <div class="homework-detail__loading" data-homework-loading>
+          <i class="fa-solid fa-circle-notch fa-spin"></i>
+          <p>Chargement des exercices…</p>
+        </div>
+        <div class="homework-detail__error" data-homework-error hidden>
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <p id="homework-error-text">Impossible de charger les exercices.</p>
+          <button type="button" class="homework-detail__retry" data-homework-retry>
+            <span>Réessayer</span>
+          </button>
+        </div>
+        <div class="homework-detail__empty" data-homework-empty hidden>
+          <i class="fa-solid fa-chalkboard"></i>
+          <p>Aucun exercice n'est disponible pour ce cours.</p>
+        </div>
+        <div class="homework-detail__content" data-homework-content hidden>
+          <ul class="exercise-list" data-exercise-list></ul>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

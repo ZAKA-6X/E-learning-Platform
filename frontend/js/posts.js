@@ -1,5 +1,6 @@
 /* posts.js - Publications composer lifecycle with fresh form per click */
 document.addEventListener("DOMContentLoaded", () => {
+  const SUBJECTS_API_BASE = "/api/subjects";
   // ---------- tiny helpers ----------
   function qs(sel, root) {
     return (root || document).querySelector(sel);
@@ -144,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // PDF/media UX (multi-file chips)
       setupFileMediaUI(form);
 
-      // Audience -> Subject toggle (now fetches /subjects/mine)
+      // Audience -> Subject toggle (now fetches /api/subjects/mine)
       setupAudienceSubjectToggle(form);
 
       // Submit → backend for this fresh form
@@ -167,13 +168,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!audienceSelect || !subjectField) return;
 
-    // Lazy-fetch subjects from /subjects/mine once
+    // Lazy-fetch subjects from /api/subjects/mine once
     let subjectsLoaded = false;
     async function ensureSubjectsLoaded() {
       if (subjectsLoaded || !subjectSelect) return;
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("/subjects/mine", {
+        const res = await fetch(`${SUBJECTS_API_BASE}/mine`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -206,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         subjectsLoaded = true;
       } catch (e) {
-        console.warn("[posts.js] Could not load subjects from /subjects/mine:", e);
+        console.warn("[posts.js] Could not load subjects from /api/subjects/mine:", e);
         if (subjectSelect && !subjectSelect.children.length) {
           const opt = document.createElement("option");
           opt.value = "";

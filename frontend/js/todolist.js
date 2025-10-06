@@ -35,6 +35,8 @@ const toast = (message, type) => {
 let CURRENT_TODOS = [];
 
 // ---- Render & Load ----
+const TODO_API_BASE = '/api/todos';
+
 async function loadTodos() {
   const listEl = document.getElementById("todo-list");
   if (!listEl) {
@@ -43,7 +45,7 @@ async function loadTodos() {
   }
 
   try {
-    const res = await apiFetch("/todos");
+    const res = await apiFetch(TODO_API_BASE);
     if (!res.ok) {
       const msg = await res.text();
       throw new Error(msg || `HTTP ${res.status}`);
@@ -90,7 +92,7 @@ async function handleAdd(e) {
   if (!value) return;
 
   try {
-    const res = await apiFetch("/todos", {
+    const res = await apiFetch(TODO_API_BASE, {
       method: "POST",
       body: JSON.stringify({ data: value }),
     });
@@ -118,7 +120,7 @@ function bindListEvents() {
       const id = target.getAttribute("data-id");
       const checked = !!target.checked;
       try {
-        const res = await apiFetch(`/todos/${id}/status`, {
+        const res = await apiFetch(`${TODO_API_BASE}/${id}/status`, {
           method: "PATCH",
           body: JSON.stringify({ status: checked }),
         });
@@ -142,7 +144,7 @@ function bindListEvents() {
       if (next === null) return;
 
       try {
-        const res = await apiFetch(`/todos/${id}`, {
+        const res = await apiFetch(`${TODO_API_BASE}/${id}`, {
           method: "PUT",
           body: JSON.stringify({ data: next }),
         });
@@ -170,7 +172,7 @@ function bindListEvents() {
       if (!confirmed) return;
 
       try {
-        const res = await apiFetch(`/todos/${id}`, { method: "DELETE" });
+        const res = await apiFetch(`${TODO_API_BASE}/${id}`, { method: "DELETE" });
         if (!res.ok && res.status !== 204) throw new Error(await res.text());
         await loadTodos();
       } catch (err) {

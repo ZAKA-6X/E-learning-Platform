@@ -353,6 +353,21 @@
           <section id="devoirs" class="content-section">
             <h2>📝 Devoirs</h2>
             <p>Liste des devoirs à rendre.</p>
+            <div class="homework-panel" data-homework-panel>
+              <div class="homework-loading" data-homework-loading>
+                <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+                <p>Chargement des devoirs…</p>
+              </div>
+              <div class="homework-error" data-homework-error hidden>
+                <p data-homework-error-text>Impossible de charger les devoirs.</p>
+                <button type="button" class="homework-retry" data-homework-retry>Réessayer</button>
+              </div>
+              <div class="homework-empty" data-homework-empty hidden>
+                <i class="fa-solid fa-check-circle" aria-hidden="true"></i>
+                <p>Aucun devoir à afficher pour le moment.</p>
+              </div>
+              <div class="homework-grid" data-homework-content hidden></div>
+            </div>
           </section>
 
           <section id="examens" class="content-section">
@@ -401,7 +416,40 @@
           </section>
 
           <section id="ressources" class="content-section">
-            <h2>📚 Bibliothèque</h2>  
+            <h2>📚 Bibliothèque</h2>
+            <div class="library-panel" data-library-panel>
+              <div class="library-loading" data-library-loading>
+                <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+                <p>Chargement des cours…</p>
+              </div>
+              <div class="library-error" data-library-error hidden>
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <p data-library-error-text>Impossible de charger la bibliothèque.</p>
+                <button type="button" class="library-card__action" data-library-retry>
+                  <span>Réessayer</span>
+                </button>
+              </div>
+              <div class="library-empty" data-library-empty hidden>
+                <i class="fa-solid fa-chalkboard" aria-hidden="true"></i>
+                <p>Aucun cours publié pour le moment.</p>
+              </div>
+              <div class="library-content" data-library-content hidden>
+                <div class="library-breadcrumb" data-library-breadcrumb hidden>
+                  <button type="button" class="library-breadcrumb__btn" data-library-back-subjects hidden>
+                    ← Matières
+                  </button>
+                  <button type="button" class="library-breadcrumb__btn" data-library-back-courses hidden>
+                    ← Cours
+                  </button>
+                  <p class="library-meta" data-library-meta></p>
+                </div>
+                <div class="subject-grid" data-library-subjects></div>
+                <div class="library-courses" data-library-courses hidden></div>
+                <div class="library-detail" data-library-detail hidden>
+                  <div class="library-sections" data-library-detail-container></div>
+                </div>
+              </div>
+            </div>
           </section>
  
           <section id="messagerie" class="content-section">

@@ -16,6 +16,10 @@ const els = {
 };
 
 const params = new URLSearchParams(window.location.search);
+const returnView = params.get('returnView') || '';
+const returnSubject = params.get('returnSubject') || '';
+const returnCourse = params.get('returnCourse') || '';
+const returnSection = params.get('returnSection') || '';
 const courseId = params.get("courseId");
 const resourceId = params.get("resourceId");
 const directFileUrl = params.get("file");
@@ -53,9 +57,25 @@ const defaultBack = (() => {
   return "/pages/teacher-dashboard.html";
 })();
 
+function buildBackUrl() {
+  if (!returnView) return null;
+  const params = new URLSearchParams();
+  params.set('libraryView', returnView);
+  if (returnSubject) params.set('librarySubject', returnSubject);
+  if (returnCourse) params.set('libraryCourse', returnCourse);
+  if (returnSection) params.set('librarySection', returnSection);
+  return `/pages/student-dashboard.html?${params.toString()}`;
+}
+
+const customBackUrl = buildBackUrl();
+
 if (els.back) {
   els.back.addEventListener("click", (event) => {
     event.preventDefault();
+    if (customBackUrl) {
+      window.location.href = customBackUrl;
+      return;
+    }
     if (document.referrer && document.referrer !== window.location.href) {
       window.history.back();
     } else {
@@ -262,6 +282,54 @@ function createImage(url, title) {
   return img;
 }
 
+function looksLikeMarkdown(text) {
+  if (!text) return false;
+  return /(^|\n)#{1,6}\s+/.test(text) || /```/.test(text) || /(^|\n)[-*_]{3,}/.test(text);
+}
+
+function renderMarkdownArticle(markdown) {
+  const article = document.createElement("article");
+  article.className = "media-article media-markdown";
+
+  if (typeof window.marked !== "undefined") {
+    const html = window.marked.parse(markdown || "");
+    if (window.DOMPurify) {
+      article.innerHTML = window.DOMPurify.sanitize(html);
+    } else {
+      article.innerHTML = html;
+    }
+  } else {
+    article.textContent = markdown || "";
+  }
+
+  return article;
+}
+
+async function renderMarkdownFromUrl(url) {
+  if (!els.viewer) return;
+  const placeholder = document.createElement("div");
+  placeholder.className = "media-placeholder";
+  placeholder.innerHTML = `
+    <i class="fa-solid fa-circle-notch fa-spin"></i>
+    <p>Chargement du document…</p>
+  `;
+  els.viewer.appendChild(placeholder);
+
+  try {
+    const response = await fetch(url, { credentials: "omit" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    const article = renderMarkdownArticle(text);
+    placeholder.replaceWith(article);
+  } catch (err) {
+    console.error("Failed to load markdown", err);
+    placeholder.innerHTML = `
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <p>Impossible de charger ce document markdown.</p>
+    `;
+  }
+}
+
 function renderResourceViewer(resource) {
   if (!els.viewer) return;
   if (els.loading) {
@@ -308,8 +376,24 @@ function renderResourceViewer(resource) {
       els.viewer.appendChild(createImage(url, resource?.title));
       break;
     }
+    case "markdown": {
+      if (hasUrl) {
+        renderMarkdownFromUrl(url);
+      } else if (hasContent) {
+        els.viewer.appendChild(renderMarkdownArticle(resource.content.trim()));
+      }
+      break;
+    }
     case "link": {
-      // External links are better viewed outside for security reasons
+      if (hasUrl) {
+        els.viewer.innerHTML = `
+          <div class="media-placeholder">
+            <i class="fa-solid fa-up-right-from-square"></i>
+            <p>Cette ressource est un lien externe.</p>
+            <a class="action-button" href="${url}" target="_blank" rel="noopener noreferrer">Ouvrir le lien</a>
+          </div>
+        `;
+      }
       break;
     }
     case "quiz": {
@@ -332,14 +416,20 @@ function renderResourceViewer(resource) {
           els.viewer.appendChild(createAudio(url));
         } else if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) {
           els.viewer.appendChild(createImage(url, resource?.title));
+        } else if (["md", "markdown", "mdown", "mkd"].includes(ext)) {
+          renderMarkdownFromUrl(url);
         } else {
           els.viewer.appendChild(createIframe(url));
-      }
+        }
       } else if (hasContent) {
-        const article = document.createElement("article");
-        article.className = "media-article";
-        article.textContent = resource.content.trim();
-        els.viewer.appendChild(article);
+        if (looksLikeMarkdown(resource.content)) {
+          els.viewer.appendChild(renderMarkdownArticle(resource.content.trim()));
+        } else {
+          const article = document.createElement("article");
+          article.className = "media-article";
+          article.textContent = resource.content.trim();
+          els.viewer.appendChild(article);
+        }
       }
       break;
     }

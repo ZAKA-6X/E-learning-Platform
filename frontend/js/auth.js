@@ -12,6 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
 const form = document.getElementById("login-form");
 const errorBox = document.getElementById("login-error");
 
+if (!form) {
+  return; // nothing to wire on pages that have no login form
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   errorBox.textContent = "";
