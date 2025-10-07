@@ -270,8 +270,29 @@
           <main class="content-area" id="content-area" name="content-area">
       
           <section id="accueil" class="content-section">
-            <h2>🏠 Accueil</h2>
-            <p>Bienvenue sur votre tableau de bord étudiant.</p>
+            <div class="home-hero" data-home-hero>
+              <div class="home-hero__copy">
+                <p class="home-hero__greeting">Bonjour, <span data-hero-name>Étudiant</span> 👋</p>
+                <h2 class="home-hero__title">Prêt à réussir ta journée&nbsp;?</h2>
+                <p class="home-hero__subtitle">
+                  Retrouve d’un coup d’œil tes prochains examens, devoirs et messages importants.
+                </p>
+              </div>
+              <div class="home-hero__stats">
+                <article class="home-hero__stat">
+                  <span class="home-hero__stat-value" data-hero-homework-count>0</span>
+                  <span class="home-hero__stat-label">Devoirs à rendre</span>
+                </article>
+                <article class="home-hero__stat">
+                  <span class="home-hero__stat-value" data-hero-todo-count>0</span>
+                  <span class="home-hero__stat-label">Tâches en attente</span>
+                </article>
+                <article class="home-hero__stat">
+                  <span class="home-hero__stat-value" data-hero-inbox-count>—</span>
+                  <span class="home-hero__stat-label">Messages récents</span>
+                </article>
+              </div>
+            </div>
 
             <div class="dashboard-summary" data-dashboard-summary>
               <div class="summary-left">
@@ -311,13 +332,26 @@
                 <article class="summary-card" data-summary="inbox">
                   <header class="summary-card__header">
                     <span class="summary-title">Messages récents</span>
-                    <span class="summary-meta">Derniers échanges</span>
+                  <span class="summary-meta">Derniers échanges</span>
                   </header>
                   <ul class="summary-list" id="summary-inbox">
                     <li class="summary-empty">Chargement…</li>
                   </ul>
                   <footer class="summary-footer">
                     <a class="summary-link" href="#messagerie">Accéder à la messagerie</a>
+                  </footer>
+                </article>
+
+                <article class="summary-card summary-card--accent" data-summary="homework">
+                  <header class="summary-card__header">
+                    <span class="summary-title">Devoirs à rendre</span>
+                    <span class="summary-meta" data-summary-homework-count>Chargement…</span>
+                  </header>
+                  <ul class="summary-list" id="summary-homework">
+                    <li class="summary-empty">Chargement…</li>
+                  </ul>
+                  <footer class="summary-footer">
+                    <a class="summary-link" href="#devoirs">Voir tous les devoirs</a>
                   </footer>
                 </article>
               </div>

@@ -11,6 +11,7 @@ const subjectsRoutes = require('./routes/subjectsRoutes');
 const classesRoutes = require('./routes/classesRoutes');
 const usersRoutes = require('./routes/usersRoutes');
 const todosRoutes = require('./routes/todosRoutes');
+const inboxRoutes = require('./routes/inboxRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/subjects', subjectsRoutes);
 app.use('/api/classes', classesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/todos', todosRoutes);
+app.use('/api/inbox', inboxRoutes);
 
 // Basic health check
 app.get('/api/health', (_req, res) => {

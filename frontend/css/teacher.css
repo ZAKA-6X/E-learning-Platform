@@ -754,12 +754,40 @@ dialog::backdrop {
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1200px) {
-  .left-sidebar {
-    display: none;
-  }
-
   .main-container {
     padding: 20px;
+  }
+}
+
+@media (max-width: 980px) {
+  .main-container {
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .centered-content {
+    width: 100%;
+  }
+
+  .left-sidebar {
+    position: fixed;
+    inset: 64px auto 0 0;
+    width: min(260px, 82vw);
+    height: auto;
+    max-height: calc(100vh - 64px);
+    transform: translateX(-105%);
+    opacity: 0;
+    visibility: hidden;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+    transition: transform 0.28s ease, opacity 0.28s ease, visibility 0.28s ease;
+    z-index: 80;
+  }
+
+  body.sidebar-open .left-sidebar {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
   }
 }
 

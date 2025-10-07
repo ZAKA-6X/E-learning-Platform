@@ -33,6 +33,15 @@
     refs: {},
   };
 
+  const heroState = {
+    els: {},
+    counts: {
+      homework: 0,
+      todos: 0,
+      inbox: 0,
+    },
+  };
+
   const libraryRestoreQuery = (() => {
     const params = new URLSearchParams(window.location.search || '');
     const viewRaw = params.get('libraryView');
@@ -50,6 +59,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    initHero();
+
     const summaryRoot = document.querySelector(SUMMARY_SELECTOR);
     if (summaryRoot) {
       renderRandomExams();
@@ -74,6 +85,159 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function safeParse(value) {
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function formatShortDate(value) {
+    if (!value) return '';
+    try {
+      return new Intl.DateTimeFormat('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+      }).format(new Date(value));
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function initHero() {
+    heroState.els = {
+      container: document.querySelector('[data-home-hero]'),
+      name: document.querySelector('[data-hero-name]'),
+      homeworkCount: document.querySelector('[data-hero-homework-count]'),
+      todoCount: document.querySelector('[data-hero-todo-count]'),
+      inboxCount: document.querySelector('[data-hero-inbox-count]'),
+    };
+
+    updateHeroName();
+    updateHeroCounts();
+  }
+
+  function updateHeroName() {
+    const nameEl = heroState.els?.name;
+    if (!nameEl) return;
+    const resolved = resolveCurrentStudentName();
+    nameEl.textContent = resolved;
+  }
+
+  function resolveCurrentStudentName() {
+    const stored = (localStorage.getItem('user_profile_name') || '').trim();
+    if (stored) return stored;
+
+    const user = safeParse(localStorage.getItem('user'));
+    if (user && typeof user === 'object') {
+      const parts = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+      if (parts) return parts;
+      if (user.full_name) return user.full_name;
+      if (user.email) return user.email;
+    }
+
+    return 'Étudiant';
+  }
+
+  function updateHeroCount(kind, value) {
+    if (!Object.prototype.hasOwnProperty.call(heroState.counts, kind)) return;
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+      heroState.counts[kind] = null;
+    } else {
+      const numeric = Number(value);
+      heroState.counts[kind] = numeric < 0 ? 0 : numeric;
+    }
+    updateHeroCounts();
+  }
+
+  function updateHeroCounts() {
+    const { homeworkCount, todoCount, inboxCount } = heroState.els;
+    if (homeworkCount) homeworkCount.textContent = formatCountDisplay(heroState.counts.homework);
+    if (todoCount) todoCount.textContent = formatCountDisplay(heroState.counts.todos);
+    if (inboxCount) inboxCount.textContent = formatCountDisplay(heroState.counts.inbox);
+  }
+
+  function formatCountDisplay(value) {
+    if (value === null || value === undefined) return '—';
+    if (!Number.isFinite(value)) return '—';
+    if (value > 99) return '99+';
+    return String(Math.max(0, Math.floor(value)));
+  }
+
+  function updateSummaryHomeworkMeta(text) {
+    const meta = document.querySelector('[data-summary-homework-count]');
+    if (meta) {
+      meta.textContent = text;
+    }
+  }
+
+  function setHomeworkSummaryLoading() {
+    const listEl = document.getElementById('summary-homework');
+    if (listEl) {
+      listEl.innerHTML = '<li class="summary-empty">Chargement…</li>';
+    }
+    updateSummaryHomeworkMeta('Chargement…');
+  }
+
+  function setHomeworkSummaryMessage(text, metaText = 'À jour ✅') {
+    const listEl = document.getElementById('summary-homework');
+    if (listEl) {
+      listEl.innerHTML = `<li class="summary-empty">${escapeHtml(text)}</li>`;
+    }
+    updateSummaryHomeworkMeta(metaText);
+    updateHeroCount('homework', 0);
+  }
+
+  function updateHomeworkSummaryFromCourses(entries) {
+    const listEl = document.getElementById('summary-homework');
+    if (!listEl) return;
+
+    if (!entries || !entries.length) {
+      setHomeworkSummaryMessage('Aucun devoir à venir.', 'À jour ✅');
+      return;
+    }
+
+    const sorted = entries
+      .slice()
+      .sort((a, b) => {
+        const dateA = new Date(a.course?.updated_at || a.course?.created_at || 0).getTime();
+        const dateB = new Date(b.course?.updated_at || b.course?.created_at || 0).getTime();
+        return dateB - dateA;
+      });
+
+    const top = sorted.slice(0, 3);
+    const items = top.map(({ course, assignment }) => {
+      const summary = normalizeExerciseSummary(course?.exercise_summary);
+      const pending = Math.max(0, summary.total - summary.submitted);
+      const pendingLabel =
+        pending > 0
+          ? `${pending} exercice${pending > 1 ? 's' : ''} à faire`
+          : 'Tout est terminé';
+      const subject = assignment?.subject?.name;
+      const updated = formatShortDate(course?.updated_at || course?.created_at);
+      const metaParts = [pendingLabel];
+      if (subject) metaParts.push(subject);
+      if (updated) metaParts.push(`Maj ${updated}`);
+
+      return `
+        <li class="summary-item">
+          <p class="summary-item-title">${escapeHtml(course?.title || 'Cours')}</p>
+          <p class="summary-item-meta">${escapeHtml(metaParts.join(' • '))}</p>
+        </li>
+      `;
+    });
+
+    listEl.innerHTML = items.join('');
+
+    const totalPending = sorted.length;
+    const metaText =
+      totalPending === 1 ? '1 devoir en attente' : `${totalPending} devoirs en attente`;
+    updateSummaryHomeworkMeta(metaText);
+    updateHeroCount('homework', totalPending);
   }
 
   function renderSummary(listId, items, emptyMessage, renderItem) {
@@ -172,6 +336,7 @@
     ];
 
     const items = pickItems(inboxPool, 2);
+    updateHeroCount('inbox', items.length);
 
     renderSummary(
       'summary-inbox',
@@ -193,6 +358,7 @@
     const token = getToken();
     if (!token) {
       listEl.innerHTML = '<li class="summary-empty">Connectez-vous pour voir vos tâches.</li>';
+      updateHeroCount('todos', 0);
       return;
     }
 
@@ -209,6 +375,14 @@
       }
 
       const todos = await res.json();
+      const pendingCount = Array.isArray(todos)
+        ? todos.filter((todo) => {
+            if (!todo || typeof todo !== 'object') return true;
+            if (!Object.prototype.hasOwnProperty.call(todo, 'status')) return true;
+            return !todo.status;
+          }).length
+        : 0;
+      updateHeroCount('todos', pendingCount);
       const upcoming = Array.isArray(todos) ? todos.slice(0, 2) : [];
 
       if (!upcoming.length) {
@@ -230,6 +404,7 @@
     } catch (err) {
       console.error('Failed to load summary todos:', err);
       listEl.innerHTML = '<li class="summary-empty">Impossible de charger les tâches.</li>';
+      updateHeroCount('todos', 0);
     }
   }
 
@@ -328,6 +503,8 @@
       retry: panel.querySelector('[data-homework-retry]'),
     };
 
+    setHomeworkSummaryLoading();
+
     const { retry } = homeworkState.refs;
     if (retry && !retry.dataset.bound) {
       retry.dataset.bound = '1';
@@ -348,6 +525,7 @@
     hideElement(error);
     hideElement(empty);
     hideElement(content);
+    setHomeworkSummaryLoading();
   }
 
   function showHomeworkError(message) {
@@ -363,6 +541,7 @@
       errorText.textContent = message || 'Impossible de charger les devoirs.';
     }
     showElement(error);
+    setHomeworkSummaryMessage(message || 'Impossible de charger les devoirs.', 'Erreur');
   }
 
   function showHomeworkEmpty(message) {
@@ -381,6 +560,7 @@
       }
       showElement(empty);
     }
+    setHomeworkSummaryMessage(message || 'Aucun devoir à venir.', 'À jour ✅');
   }
 
   function renderHomeworkAssignments(assignments) {
@@ -411,6 +591,8 @@
       showHomeworkEmpty();
       return;
     }
+
+    updateHomeworkSummaryFromCourses(actionableCourses);
 
     hideElement(empty);
     showElement(content);

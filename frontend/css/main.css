@@ -2631,6 +2631,73 @@ body.media-sidebar-open {
   margin-top: 20px;
 }
 
+.home-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 20px;
+  padding: 28px 32px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(244, 114, 182, 0.12));
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  box-shadow: 0 20px 48px rgba(79, 70, 229, 0.08);
+}
+
+.home-hero__copy {
+  flex: 2;
+  min-width: 240px;
+  display: grid;
+  gap: 10px;
+}
+
+.home-hero__greeting {
+  margin: 0;
+  font-weight: 600;
+  color: #4338ca;
+  font-size: 1rem;
+}
+
+.home-hero__title {
+  margin: 0;
+  font-size: 1.65rem;
+  color: var(--ink);
+}
+
+.home-hero__subtitle {
+  margin: 0;
+  color: var(--muted);
+  max-width: 540px;
+}
+
+.home-hero__stats {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.home-hero__stat {
+  background: #fff;
+  border-radius: 18px;
+  padding: 18px 20px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.08);
+}
+
+.home-hero__stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #4338ca;
+}
+
+.home-hero__stat-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
 .summary-left {
   flex: 2;
   display: grid;
@@ -2652,6 +2719,16 @@ body.media-sidebar-open {
   flex-direction: column;
   gap: 12px;
   box-shadow: var(--shadow);
+}
+
+.summary-card--accent {
+  background: linear-gradient(135deg, #f6fafe, #f5f5ff);
+  border-color: rgba(99, 102, 241, 0.18);
+  box-shadow: 0 16px 32px rgba(79, 70, 229, 0.08);
+}
+
+.summary-card--accent .summary-title {
+  color: #4338ca;
 }
 
 .summary-card__header {
@@ -2758,6 +2835,10 @@ body.media-sidebar-open {
 }
 
 @media (max-width: 960px) {
+  .home-hero {
+    padding: 22px;
+  }
+
   .dashboard-summary {
     flex-direction: column;
   }
@@ -2768,6 +2849,15 @@ body.media-sidebar-open {
 }
 
 @media (max-width: 640px) {
+  .home-hero {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .home-hero__stats {
+    width: 100%;
+  }
+
   .summary-left {
     grid-template-columns: 1fr;
   }
@@ -2811,6 +2901,11 @@ body.media-sidebar-open {
   display: grid;
   gap: 6px;
   line-height: 1.45;
+}
+
+.inbox-message-text {
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 .inbox-message time {

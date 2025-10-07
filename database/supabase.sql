@@ -171,6 +171,22 @@ CREATE TABLE public.teacher_subjects (
   CONSTRAINT teacher_subjects_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public.users(id),
   CONSTRAINT teacher_subjects_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.subjects(id)
 );
+CREATE TABLE public.direct_messages (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  student_id uuid NOT NULL,
+  teacher_id uuid NOT NULL,
+  sender_id uuid NOT NULL,
+  body text NOT NULL,
+  read_at timestamp with time zone,
+  CONSTRAINT direct_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT direct_messages_sender_id_check CHECK (sender_id = student_id OR sender_id = teacher_id),
+  CONSTRAINT direct_messages_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.users(id) ON DELETE CASCADE,
+  CONSTRAINT direct_messages_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public.users(id) ON DELETE CASCADE,
+  CONSTRAINT direct_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id) ON DELETE CASCADE
+);
+CREATE INDEX direct_messages_conversation_idx ON public.direct_messages USING btree (student_id, teacher_id, created_at);
 CREATE TABLE public.todolist (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT now(),

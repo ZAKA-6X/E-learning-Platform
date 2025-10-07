@@ -74,6 +74,10 @@
           <span class="sidebar-icon"><i class="fa-solid fa-book"></i></span>
           Mes cours
         </a>
+        <a href="#" class="sidebar-item" id="nav-messagerie" title="Messagerie" data-target="messagerie">
+          <span class="sidebar-icon"><i class="fa-solid fa-envelope"></i></span>
+          Messagerie
+        </a>
       </nav>
 
       <!-- Centered Content Wrapper -->
@@ -147,8 +151,8 @@
                 </div>
               </section>
 
-              <!-- DETAIL: OFFERING (class view) -->
-              <section id="offering-detail" class="course-detail hidden" aria-live="polite" data-scope="offering">
+            <!-- DETAIL: OFFERING (class view) -->
+            <section id="offering-detail" class="course-detail hidden" aria-live="polite" data-scope="offering">
                 <div class="course-detail__hero">
                   <div class="course-detail__hero-top">
                     <button type="button" class="btn-secondary" id="offering-detail-back">
@@ -441,6 +445,76 @@
                 </div>
               </section>
             </section>
+            <section id="messagerie" class="content-section" aria-live="polite">
+              <header class="courses-header">
+                <div class="left">
+                  <h2>📬 Messagerie</h2>
+                  <p class="muted">Discutez avec vos élèves en toute simplicité.</p>
+                </div>
+              </header>
+
+              <div class="inbox" data-teacher-inbox>
+                <div class="inbox-panel inbox-panel--teachers">
+                  <div class="inbox-panel-header">
+                    <h3 class="inbox-title">Mes élèves</h3>
+                    <p class="inbox-subtitle muted">Sélectionnez un élève pour consulter l'échange.</p>
+                  </div>
+                  <ul
+                    class="inbox-teacher-list"
+                    data-inbox-student-list
+                    aria-label="Liste des élèves"
+                    hidden
+                  ></ul>
+                  <div class="inbox-status" data-inbox-students-loading>
+                    <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+                    <p>Chargement des élèves…</p>
+                  </div>
+                  <div class="inbox-empty" data-inbox-students-empty hidden>
+                    <i class="fa-solid fa-user-graduate" aria-hidden="true"></i>
+                    <p>Aucun élève associé pour le moment.</p>
+                  </div>
+                  <div class="inbox-empty inbox-empty--error" data-inbox-students-error hidden>
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                    <p data-inbox-students-error-text>Impossible de charger les élèves.</p>
+                  </div>
+                </div>
+
+                <div class="inbox-panel inbox-panel--conversation" data-inbox-conversation>
+                  <header class="inbox-conversation-header" data-inbox-conversation-header>
+                    <div class="inbox-conversation-about">
+                      <h3 class="inbox-conversation-title" data-inbox-conversation-title>Choisissez un élève</h3>
+                      <p class="muted inbox-conversation-meta" data-inbox-conversation-meta>
+                        Les messages apparaîtront ici.
+                      </p>
+                    </div>
+                  </header>
+
+                  <div class="inbox-messages" data-inbox-messages>
+                    <div class="inbox-empty" data-inbox-conversation-empty>
+                      <i class="fa-regular fa-message"></i>
+                      <p>Sélectionnez un élève dans la liste pour ouvrir la conversation.</p>
+                    </div>
+                  </div>
+
+                  <form class="inbox-composer" data-inbox-composer>
+                    <label class="sr-only" for="teacher-inbox-message">Votre message</label>
+                    <textarea
+                      id="teacher-inbox-message"
+                      name="message"
+                      rows="2"
+                      placeholder="Écrire un message…"
+                      data-inbox-input
+                      disabled
+                      required
+                    ></textarea>
+                    <button type="submit" class="action-button inbox-send" data-inbox-send disabled>
+                      <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                      <span>Envoyer</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </section>
           </main>
         </div>
       </div>
@@ -449,5 +523,6 @@
     <!-- JS -->
     <script src="/js/navbar.js" defer></script>
     <script src="/js/teacher-dashboard.js?v=20250930-2" defer></script>
+    <script src="/js/teacher-inbox.js" defer></script>
   </body>
 </html>

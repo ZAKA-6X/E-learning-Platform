@@ -1,13 +1,13 @@
 (function () {
-  const inbox = document.querySelector('[data-inbox]');
+  const inbox = document.querySelector('[data-teacher-inbox]');
   if (!inbox) return;
 
   const els = {
-    teacherList: inbox.querySelector('[data-inbox-teacher-list]'),
-    teachersLoading: inbox.querySelector('[data-inbox-teachers-loading]'),
-    teachersEmpty: inbox.querySelector('[data-inbox-teachers-empty]'),
-    teachersError: inbox.querySelector('[data-inbox-teachers-error]'),
-    teachersErrorText: inbox.querySelector('[data-inbox-teachers-error-text]'),
+    studentList: inbox.querySelector('[data-inbox-student-list]'),
+    studentsLoading: inbox.querySelector('[data-inbox-students-loading]'),
+    studentsEmpty: inbox.querySelector('[data-inbox-students-empty]'),
+    studentsError: inbox.querySelector('[data-inbox-students-error]'),
+    studentsErrorText: inbox.querySelector('[data-inbox-students-error-text]'),
     conversationTitle: inbox.querySelector('[data-inbox-conversation-title]'),
     conversationMeta: inbox.querySelector('[data-inbox-conversation-meta]'),
     conversationHeader: inbox.querySelector('[data-inbox-conversation-header]'),
@@ -21,15 +21,16 @@
   const token = localStorage.getItem('token');
 
   const state = {
-    teachers: [],
+    students: [],
     conversations: new Map(),
     loadedConversations: new Set(),
-    activeTeacherId: null,
+    lastMessagePreview: new Map(),
+    activeStudentId: null,
     loadingConversation: false,
     loadingConversationFor: null,
     activeConversationRequest: null,
     conversationError: null,
-    conversationErrorTeacherId: null,
+    conversationErrorStudentId: null,
     composerEnabled: false,
     sendingMessage: false,
   };
@@ -47,56 +48,56 @@
   setComposerVisible(false);
 
   if (!token) {
-    showTeachersError('Session expirée. Veuillez vous reconnecter.');
+    showStudentsError('Session expirée. Veuillez vous reconnecter.');
     setConversationPlaceholder('Connectez-vous pour accéder à votre messagerie.');
     toggleConversationPlaceholder(true);
     return;
   }
 
-  showTeachersLoading();
-  loadTeachers();
+  showStudentsLoading();
+  loadStudents();
 
-  function renderTeacherList() {
-    if (!els.teacherList) return;
+  function renderStudentList() {
+    if (!els.studentList) return;
 
-    const teachers = state.teachers
+    const students = state.students
       .slice()
       .sort((a, b) => getLastMessageTimestamp(b.id) - getLastMessageTimestamp(a.id));
 
-    els.teacherList.innerHTML = '';
-    if (teachers.length === 0) {
-      showTeachersEmpty();
+    els.studentList.innerHTML = '';
+    if (!students.length) {
+      showStudentsEmpty();
       return;
     }
 
-    showTeachersList();
+    showStudentsList();
 
-    teachers.forEach((teacher) => {
+    students.forEach((student) => {
       const item = document.createElement('li');
       item.className = 'inbox-teacher-item';
-      item.dataset.teacherId = teacher.id;
+      item.dataset.studentId = student.id;
 
-      if (teacher.id === state.activeTeacherId) {
+      if (student.id === state.activeStudentId) {
         item.classList.add('is-active');
       }
 
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'inbox-teacher-button';
-      button.dataset.teacherId = teacher.id;
-      button.addEventListener('click', () => selectTeacher(teacher.id));
+      button.dataset.studentId = student.id;
+      button.addEventListener('click', () => selectStudent(student.id));
 
       const header = document.createElement('div');
       header.className = 'inbox-teacher-top';
 
       const name = document.createElement('span');
       name.className = 'inbox-teacher-name';
-      name.textContent = teacher.name;
+      name.textContent = student.name;
       header.appendChild(name);
 
       const time = document.createElement('time');
       time.className = 'inbox-teacher-time';
-      const lastTimestamp = getLastMessageTimestamp(teacher.id);
+      const lastTimestamp = getLastMessageTimestamp(student.id);
       if (lastTimestamp > 0) {
         time.textContent = formatRelativeTime(lastTimestamp);
         time.setAttribute('datetime', new Date(lastTimestamp).toISOString());
@@ -108,26 +109,26 @@
       const preview = document.createElement('p');
       preview.className = 'inbox-teacher-preview';
       preview.textContent =
-        getLastMessagePreview(teacher.id) || buildTeacherSubtitle(teacher);
+        getLastMessagePreview(student.id) || buildStudentSubtitle(student);
 
       button.appendChild(header);
       button.appendChild(preview);
       item.appendChild(button);
 
-      els.teacherList.appendChild(item);
+      els.studentList.appendChild(item);
     });
   }
 
-  async function loadTeachers() {
+  async function loadStudents() {
     try {
-      const res = await fetch('/api/users/teachers', {
+      const res = await fetch('/api/inbox/students', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (res.status === 401) {
-        showTeachersError('Session expirée. Veuillez vous reconnecter.');
+        showStudentsError('Session expirée. Veuillez vous reconnecter.');
         setConversationPlaceholder('Session expirée. Veuillez vous reconnecter.');
         toggleConversationPlaceholder(true);
         toggleComposer(false);
@@ -137,61 +138,68 @@
       const body = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(body?.error || 'Impossible de charger les enseignants.');
+        throw new Error(body?.error || 'Impossible de charger les élèves.');
       }
 
-      const teachers = Array.isArray(body?.teachers) ? body.teachers : [];
+      const students = Array.isArray(body?.students) ? body.students : [];
 
-      state.teachers = teachers.map(normalizeTeacher).filter(Boolean);
+      state.students = students.map(normalizeStudent).filter(Boolean);
       state.conversations = new Map();
       state.loadedConversations = new Set();
-      state.activeTeacherId = null;
+      state.lastMessagePreview = new Map();
+      state.activeStudentId = null;
       state.loadingConversation = false;
       state.loadingConversationFor = null;
       state.activeConversationRequest = null;
       state.conversationError = null;
-      state.conversationErrorTeacherId = null;
+      state.conversationErrorStudentId = null;
 
-      renderTeacherList();
+      state.students.forEach((student) => {
+        if (student.lastMessage) {
+          state.lastMessagePreview.set(student.id, student.lastMessage);
+        }
+      });
+
+      renderStudentList();
       renderConversation();
       toggleComposer(false);
     } catch (err) {
-      console.error('[inbox] loadTeachers failed', err);
-      showTeachersError(err.message || 'Impossible de charger les enseignants.');
-      setConversationPlaceholder('Impossible de charger les enseignants.');
+      console.error('[teacher-inbox] loadStudents failed', err);
+      showStudentsError(err.message || 'Impossible de charger les élèves.');
+      setConversationPlaceholder('Impossible de charger les élèves.');
       toggleConversationPlaceholder(true);
       toggleComposer(false);
     }
   }
 
-  function selectTeacher(teacherId) {
-    if (!teacherId) return;
+  function selectStudent(studentId) {
+    if (!studentId) return;
 
-    const alreadyActive = state.activeTeacherId === teacherId;
-    state.activeTeacherId = teacherId;
+    const alreadyActive = state.activeStudentId === studentId;
+    state.activeStudentId = studentId;
     state.conversationError = null;
-    state.conversationErrorTeacherId = null;
+    state.conversationErrorStudentId = null;
 
-    const alreadyLoaded = state.loadedConversations.has(teacherId);
+    const alreadyLoaded = state.loadedConversations.has(studentId);
     state.loadingConversation = !alreadyLoaded;
-    state.loadingConversationFor = teacherId;
+    state.loadingConversationFor = studentId;
 
-    renderTeacherList();
+    renderStudentList();
     renderConversation();
 
-    loadConversation(teacherId, { silent: alreadyLoaded && alreadyActive });
+    loadConversation(studentId, { silent: alreadyLoaded && alreadyActive });
   }
 
-  async function loadConversation(teacherId, options = {}) {
-    if (!teacherId || !token) return;
+  async function loadConversation(studentId, options = {}) {
+    if (!studentId || !token) return;
 
-    const teacher = getTeacherById(teacherId);
-    if (!teacher) return;
+    const student = getStudentById(studentId);
+    if (!student) return;
 
     const { silent = false } = options;
     const requestId = ++conversationRequestSeq;
     state.activeConversationRequest = requestId;
-    state.loadingConversationFor = teacherId;
+    state.loadingConversationFor = studentId;
 
     if (!silent) {
       state.loadingConversation = true;
@@ -199,7 +207,7 @@
     }
 
     try {
-      const res = await fetch(`/api/inbox/teachers/${teacherId}/messages`, {
+      const res = await fetch(`/api/inbox/students/${studentId}/messages`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -208,15 +216,15 @@
       const body = await res.json().catch(() => ({}));
 
       if (res.status === 401) {
-        state.conversations.delete(teacherId);
-        state.loadedConversations.delete(teacherId);
+        state.conversations.delete(studentId);
+        state.loadedConversations.delete(studentId);
         if (state.activeConversationRequest === requestId) {
           state.loadingConversation = false;
           state.loadingConversationFor = null;
           state.activeConversationRequest = null;
         }
-        showConversationError('Session expirée. Veuillez vous reconnecter.', teacherId);
-        if (state.activeTeacherId === teacherId) {
+        showConversationError('Session expirée. Veuillez vous reconnecter.', studentId);
+        if (state.activeStudentId === studentId) {
           toggleComposer(false);
           renderConversation();
         }
@@ -231,30 +239,38 @@
         ? body.messages.map(normalizeMessage).filter(Boolean)
         : [];
 
-      state.conversations.set(teacherId, messages);
-      state.loadedConversations.add(teacherId);
+      state.conversations.set(studentId, messages);
+      state.loadedConversations.add(studentId);
+      if (messages.length) {
+        const last = messages[messages.length - 1];
+        state.lastMessagePreview.set(studentId, {
+          text: last.text,
+          author: last.author,
+          createdAt: last.createdAt,
+        });
+      }
 
       if (state.activeConversationRequest === requestId) {
         state.conversationError = null;
-        state.conversationErrorTeacherId = null;
+        state.conversationErrorStudentId = null;
         state.loadingConversation = false;
         state.loadingConversationFor = null;
         state.activeConversationRequest = null;
-        if (state.activeTeacherId === teacherId) {
+        if (state.activeStudentId === studentId) {
           renderConversation();
         }
       }
 
-      renderTeacherList();
+      renderStudentList();
     } catch (err) {
-      console.error('[inbox] loadConversation failed', err);
-      state.loadedConversations.delete(teacherId);
+      console.error('[teacher-inbox] loadConversation failed', err);
+      state.loadedConversations.delete(studentId);
       if (state.activeConversationRequest === requestId) {
         state.loadingConversation = false;
         state.loadingConversationFor = null;
         state.activeConversationRequest = null;
-        showConversationError(err.message || 'Impossible de charger les messages.', teacherId);
-        if (state.activeTeacherId === teacherId) {
+        showConversationError(err.message || 'Impossible de charger les messages.', studentId);
+        if (state.activeStudentId === studentId) {
           renderConversation();
         }
       }
@@ -265,12 +281,18 @@
     if (!raw || typeof raw !== 'object') return null;
 
     const text = typeof raw.text === 'string' ? raw.text : raw.body || '';
-    const author = raw.author === 'teacher' ? 'teacher' : 'student';
-    const id = raw.id || raw.message_id || `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const author = raw.author === 'student' ? 'student' : 'teacher';
+    const id =
+      raw.id ||
+      raw.message_id ||
+      `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-    const createdRaw = raw.createdAt || raw.created_at || raw.created || new Date().toISOString();
+    const createdRaw =
+      raw.createdAt || raw.created_at || raw.created || new Date().toISOString();
     const createdDate = new Date(createdRaw);
-    const createdAt = Number.isNaN(createdDate.getTime()) ? new Date().toISOString() : createdDate.toISOString();
+    const createdAt = Number.isNaN(createdDate.getTime())
+      ? new Date().toISOString()
+      : createdDate.toISOString();
 
     return {
       id,
@@ -282,14 +304,14 @@
   }
 
   function renderConversation() {
-    const teacher = getActiveTeacher();
+    const student = getActiveStudent();
 
-    if (!teacher || !els.messages) {
+    if (!student || !els.messages) {
       clearMessages();
-      const placeholder = state.teachers.length
-        ? 'Sélectionnez un enseignant dans la liste pour ouvrir la conversation.'
-        : 'Aucun enseignant attribué pour le moment.';
-      setText(els.conversationTitle, 'Choisissez un enseignant');
+      const placeholder = state.students.length
+        ? 'Sélectionnez un élève dans la liste pour ouvrir la conversation.'
+        : 'Aucun élève associé pour le moment.';
+      setText(els.conversationTitle, 'Choisissez un élève');
       setText(els.conversationMeta, 'Les messages apparaîtront ici.');
       setConversationPlaceholder(placeholder);
       toggleConversationPlaceholder(true);
@@ -299,11 +321,11 @@
     }
 
     setComposerVisible(true);
-    setText(els.conversationTitle, teacher.name);
-    const subtitle = buildTeacherSubtitle(teacher);
+    setText(els.conversationTitle, student.name);
+    const subtitle = buildStudentSubtitle(student);
     setText(els.conversationMeta, subtitle);
 
-    if (state.loadingConversation && state.loadingConversationFor === teacher.id) {
+    if (state.loadingConversation && state.loadingConversationFor === student.id) {
       clearMessages();
       setText(els.conversationMeta, 'Chargement de la conversation…');
       setConversationPlaceholder('Chargement des messages…', 'loading');
@@ -313,7 +335,7 @@
       return;
     }
 
-    if (state.conversationError && state.conversationErrorTeacherId === teacher.id) {
+    if (state.conversationError && state.conversationErrorStudentId === student.id) {
       clearMessages();
       setText(els.conversationMeta, state.conversationError);
       setConversationPlaceholder(state.conversationError, 'error');
@@ -323,13 +345,34 @@
       return;
     }
 
-    const conversation = state.conversations.get(teacher.id) || [];
-    const isLoaded = state.loadedConversations.has(teacher.id);
+    const conversation = state.conversations.get(student.id) || [];
+    const isLoaded = state.loadedConversations.has(student.id);
 
     if (!isLoaded) {
       clearMessages();
-      setConversationPlaceholder('Sélectionnez un enseignant pour afficher la conversation.');
-      toggleConversationPlaceholder(true);
+      const preview = state.lastMessagePreview.get(student.id);
+      if (preview) {
+        toggleConversationPlaceholder(false);
+        clearMessages();
+        const bubble = document.createElement('div');
+        bubble.className = `inbox-message inbox-message--${preview.author === 'teacher' ? 'me' : 'teacher'}`;
+        bubble.dataset.author = preview.author;
+
+        const content = document.createElement('p');
+        content.className = 'inbox-message-text';
+        content.textContent = preview.text;
+        bubble.appendChild(content);
+
+        const time = document.createElement('time');
+        time.textContent = formatTime(preview.createdAt);
+        time.setAttribute('datetime', new Date(preview.createdAt).toISOString());
+        bubble.appendChild(time);
+
+        els.messages.appendChild(bubble);
+      } else {
+        setConversationPlaceholder('Sélectionnez un élève pour afficher la conversation.');
+        toggleConversationPlaceholder(true);
+      }
       toggleComposer(false);
       setComposerVisible(true);
       return;
@@ -349,7 +392,7 @@
 
     conversation.forEach((message) => {
       const bubble = document.createElement('div');
-      bubble.className = `inbox-message inbox-message--${message.author === 'student' ? 'me' : 'teacher'}`;
+      bubble.className = `inbox-message inbox-message--${message.author === 'teacher' ? 'me' : 'teacher'}`;
       bubble.dataset.author = message.author;
 
       const content = document.createElement('p');
@@ -378,8 +421,8 @@
     event.preventDefault();
     if (state.sendingMessage) return;
 
-    const teacher = getActiveTeacher();
-    if (!teacher || !els.textarea) return;
+    const student = getActiveStudent();
+    if (!student || !els.textarea) return;
 
     const messageText = els.textarea.value.trim();
     if (!messageText) {
@@ -391,7 +434,7 @@
     updateComposerControls();
 
     try {
-      const res = await fetch(`/api/inbox/teachers/${teacher.id}/messages`, {
+      const res = await fetch(`/api/inbox/students/${student.id}/messages`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -403,7 +446,7 @@
       const body = await res.json().catch(() => ({}));
 
       if (res.status === 401) {
-        showConversationError('Session expirée. Veuillez vous reconnecter.', teacher.id);
+        showConversationError('Session expirée. Veuillez vous reconnecter.', student.id);
         toggleComposer(false);
         renderConversation();
         return;
@@ -418,29 +461,34 @@
         throw new Error('Réponse inattendue du serveur.');
       }
 
-      const conversation = state.conversations.get(teacher.id) || [];
+      const conversation = state.conversations.get(student.id) || [];
       conversation.push(message);
-      state.conversations.set(teacher.id, conversation);
-      state.loadedConversations.add(teacher.id);
+      state.conversations.set(student.id, conversation);
+      state.loadedConversations.add(student.id);
       state.conversationError = null;
-      state.conversationErrorTeacherId = null;
+      state.conversationErrorStudentId = null;
+      state.lastMessagePreview.set(student.id, {
+        text: message.text,
+        author: message.author,
+        createdAt: message.createdAt,
+      });
 
       els.textarea.value = '';
       renderConversation();
-      renderTeacherList();
+      renderStudentList();
     } catch (err) {
-      console.error('[inbox] sendMessage failed', err);
+      console.error('[teacher-inbox] sendMessage failed', err);
       const errorText = err.message || "Impossible d'envoyer le message.";
-      if (els.conversationMeta && state.activeTeacherId === teacher.id) {
-        const defaultMeta = buildTeacherSubtitle(teacher);
+      if (els.conversationMeta && state.activeStudentId === student.id) {
+        const defaultMeta = buildStudentSubtitle(student);
         setText(els.conversationMeta, errorText);
         window.setTimeout(() => {
-          if (state.activeTeacherId === teacher.id && els.conversationMeta.textContent === errorText) {
+          if (state.activeStudentId === student.id && els.conversationMeta.textContent === errorText) {
             setText(els.conversationMeta, defaultMeta);
           }
         }, 4000);
       }
-      if ((state.conversations.get(teacher.id) || []).length === 0) {
+      if ((state.conversations.get(student.id) || []).length === 0) {
         setConversationPlaceholder(errorText, 'error');
         toggleConversationPlaceholder(true);
       }
@@ -519,44 +567,51 @@
     els.conversationEmpty.classList.toggle('inbox-empty--error', variant === 'error');
   }
 
-  function showConversationError(message, teacherId) {
+  function showConversationError(message, studentId) {
     state.conversationError = message;
-    state.conversationErrorTeacherId = teacherId;
+    state.conversationErrorStudentId = studentId;
   }
 
-  function getActiveTeacher() {
-    return getTeacherById(state.activeTeacherId);
+  function getActiveStudent() {
+    return getStudentById(state.activeStudentId);
   }
 
-  function getTeacherById(id) {
+  function getStudentById(id) {
     if (!id) return null;
-    return state.teachers.find((teacher) => teacher.id === id) || null;
+    return state.students.find((student) => student.id === id) || null;
   }
 
-  function getLastMessageTimestamp(teacherId) {
-    const conversation = state.conversations.get(teacherId) || [];
-    if (conversation.length === 0) return 0;
-    const last = conversation[conversation.length - 1];
-    return new Date(last.createdAt).getTime();
-  }
-
-  function getLastMessagePreview(teacherId) {
-    const conversation = state.conversations.get(teacherId) || [];
-    if (conversation.length === 0) return '';
-    const last = conversation[conversation.length - 1];
-    return truncate(last.text, 60);
-  }
-
-  function buildTeacherSubtitle(teacher) {
-    if (!teacher) return 'Enseignant';
-    if (teacher.subject) return `Enseignant en ${teacher.subject}`;
-    if (Array.isArray(teacher.subjects) && teacher.subjects.length > 0) {
-      return `Enseignant en ${teacher.subjects[0]}`;
+  function getLastMessageTimestamp(studentId) {
+    const conversation = state.conversations.get(studentId) || [];
+    if (conversation.length > 0) {
+      const last = conversation[conversation.length - 1];
+      return new Date(last.createdAt).getTime();
     }
-    if (teacher.className) return `Référent · ${teacher.className}`;
-    if (teacher.schoolName) return `Établissement · ${teacher.schoolName}`;
-    if (teacher.email) return teacher.email;
-    return 'Enseignant';
+    const preview = state.lastMessagePreview.get(studentId);
+    if (preview?.createdAt) {
+      return new Date(preview.createdAt).getTime();
+    }
+    return 0;
+  }
+
+  function getLastMessagePreview(studentId) {
+    const conversation = state.conversations.get(studentId) || [];
+    if (conversation.length > 0) {
+      const last = conversation[conversation.length - 1];
+      return truncate(last.text, 60);
+    }
+    const preview = state.lastMessagePreview.get(studentId);
+    if (preview?.text) {
+      return truncate(preview.text, 60);
+    }
+    return '';
+  }
+
+  function buildStudentSubtitle(student) {
+    if (!student) return 'Élève';
+    if (student.className) return `Classe • ${student.className}`;
+    if (student.email) return student.email;
+    return 'Élève';
   }
 
   function formatRelativeTime(timestamp) {
@@ -617,28 +672,41 @@
     node.textContent = text ?? '';
   }
 
-  function normalizeTeacher(raw) {
+  function normalizeStudent(raw) {
     if (!raw || typeof raw !== 'object' || !raw.id) {
       return null;
     }
 
     const id = String(raw.id).trim();
+    const fullName =
+      raw.full_name ||
+      buildName(raw.first_name, raw.last_name) ||
+      raw.email ||
+      'Élève';
 
-    const fullName = raw.full_name || buildName(raw.first_name, raw.last_name);
-    const className = raw.class?.name || null;
-    const schoolName = raw.school?.name || null;
+    const className =
+      raw.class?.name ||
+      raw.class_name ||
+      (raw.class && raw.class.title) ||
+      null;
 
-    const subjectsArray = Array.isArray(raw.subjects) ? raw.subjects.filter(Boolean) : [];
-    const primarySubject = raw.subject || subjectsArray[0] || null;
+    let lastMessage = null;
+    if (raw.last_message && typeof raw.last_message === 'object') {
+      const lm = raw.last_message;
+      const created = lm.createdAt || lm.created_at || null;
+      lastMessage = {
+        text: typeof lm.text === 'string' ? lm.text : lm.body || '',
+        author: lm.author === 'student' ? 'student' : 'teacher',
+        createdAt: created,
+      };
+    }
 
     return {
       id,
-      name: fullName || raw.email || 'Enseignant',
       email: raw.email || '',
-      subject: primarySubject,
-      subjects: subjectsArray,
+      name: fullName,
       className,
-      schoolName,
+      lastMessage,
     };
   }
 
@@ -646,37 +714,37 @@
     return [first, last].filter(Boolean).join(' ').trim();
   }
 
-  function showTeachersLoading() {
-    toggle(els.teacherList, true);
-    toggle(els.teachersEmpty, true);
-    toggle(els.teachersError, true);
-    toggle(els.teachersLoading, false);
+  function showStudentsLoading() {
+    toggle(els.studentList, true);
+    toggle(els.studentsEmpty, true);
+    toggle(els.studentsError, true);
+    toggle(els.studentsLoading, false);
   }
 
-  function showTeachersEmpty() {
-    toggle(els.teacherList, true);
-    toggle(els.teachersLoading, true);
-    toggle(els.teachersError, true);
-    toggle(els.teachersEmpty, false);
+  function showStudentsEmpty() {
+    toggle(els.studentList, true);
+    toggle(els.studentsLoading, true);
+    toggle(els.studentsError, true);
+    toggle(els.studentsEmpty, false);
   }
 
-  function showTeachersError(message) {
-    if (els.teachersErrorText) {
-      setText(els.teachersErrorText, message || 'Impossible de charger les enseignants.');
+  function showStudentsError(message) {
+    if (els.studentsErrorText) {
+      setText(els.studentsErrorText, message || 'Impossible de charger les élèves.');
     }
-    if (els.teacherList) {
-      els.teacherList.innerHTML = '';
+    if (els.studentList) {
+      els.studentList.innerHTML = '';
     }
-    toggle(els.teacherList, true);
-    toggle(els.teachersLoading, true);
-    toggle(els.teachersEmpty, true);
-    toggle(els.teachersError, false);
+    toggle(els.studentList, true);
+    toggle(els.studentsLoading, true);
+    toggle(els.studentsEmpty, true);
+    toggle(els.studentsError, false);
   }
 
-  function showTeachersList() {
-    toggle(els.teacherList, false);
-    toggle(els.teachersLoading, true);
-    toggle(els.teachersEmpty, true);
-    toggle(els.teachersError, true);
+  function showStudentsList() {
+    toggle(els.studentList, false);
+    toggle(els.studentsLoading, true);
+    toggle(els.studentsEmpty, true);
+    toggle(els.studentsError, true);
   }
 })();

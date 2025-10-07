@@ -1,4 +1,4 @@
-# School Platform
+# ClicaEd:
 
 Project structure and setup for E-learning Platform.
 
@@ -26,17 +26,18 @@ Project structure and setup for E-learning Platform.
     fix audience for stud-posts,
     media reader for posts,
     responsive reader-media,
-    ***back to login page,
     error and confirm message of pages,
     posts, comments delete,
     reset sort, filter after creation new post,
+    home page hase list student add Ui,
+    inbox page,
     add calender display exams (no database***),
-    home page hase list student,
-    inbox page (need activate***),
     
+**Inbox**: students can message their assigned teachers. Conversations load on demand, newly received messages update sidebar previews, and the composer is hidden until a teacher is selected.
 
+**Student Homework Tracker**: Students now see upcoming exercises directly from their dashboard with per-course progress.
 
-todo: toxic comments, posts, formation enseignat,
+**todo**: back login, toxic comments, posts, formation enseignat,
 🤖 AI Integration for Teachers
 
 We integrated an AI assistant into the teacher dashboard so teachers can generate helpful resources (summaries, key concepts, quizzes, and exercises) from any file they upload.
@@ -58,6 +59,7 @@ Exercices + solutions (generate practice problems with answers)
 AI preview shows the result before saving.
 
 Teachers can insert the AI output directly into their course folders as a new resource.
+
 
 How it works
 

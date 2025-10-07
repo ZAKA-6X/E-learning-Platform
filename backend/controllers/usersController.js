@@ -77,6 +77,7 @@ exports.listTeachers = async (req, res) => {
 
   try {
     let teacherFilterIds = null;
+    const teacherSubjects = new Map();
 
     if (requesterRole === 'student') {
       const { data: studentRow, error: studentError } = await supabase
@@ -95,25 +96,72 @@ exports.listTeachers = async (req, res) => {
         return res.json({ teachers: [] });
       }
 
-      const { data: teacherRows, error: teacherMapError } = await supabase
-        .from('teacher_class')
-        .select('teacher_id')
+      const filterSet = new Set();
+
+      const { data: assignmentRows, error: assignmentsError } = await supabase
+        .from('teacher_assignments')
+        .select('teacher_id, subject:subjects(id,name)')
         .eq('class_id', classId);
 
-      if (teacherMapError) {
-        console.error('[usersController] listTeachers teacher map', teacherMapError);
-        return res.status(500).json({ error: teacherMapError.message || 'Supabase error' });
+      if (assignmentsError) {
+        console.error('[usersController] listTeachers assignments', assignmentsError);
+        return res.status(500).json({ error: assignmentsError.message || 'Supabase error' });
       }
 
-      const ids = (teacherRows || [])
-        .map((row) => row?.teacher_id)
-        .filter(Boolean);
+      (assignmentRows || []).forEach((row) => {
+        const rawTeacherId = row?.teacher_id;
+        const teacherId =
+          typeof rawTeacherId === 'string'
+            ? rawTeacherId.trim()
+            : rawTeacherId && typeof rawTeacherId.toString === 'function'
+            ? rawTeacherId.toString().trim()
+            : null;
+        if (!teacherId) return;
+        filterSet.add(teacherId);
+        const subjectName = row?.subject?.name || null;
+        if (subjectName) {
+          const list = teacherSubjects.get(teacherId) || [];
+          list.push(subjectName);
+          teacherSubjects.set(teacherId, Array.from(new Set(list)));
+        }
+      });
 
-      if (!ids.length) {
+      if (filterSet.size === 0) {
+        const { data: teacherRows, error: teacherMapError } = await supabase
+          .from('teacher_class')
+          .select('teacher_id')
+          .eq('class_id', classId);
+
+        if (teacherMapError) {
+          console.error('[usersController] listTeachers teacher map', teacherMapError);
+          return res.status(500).json({ error: teacherMapError.message || 'Supabase error' });
+        }
+
+        (teacherRows || []).forEach((row) => {
+          const rawTeacherId = row?.teacher_id;
+          const teacherId =
+            typeof rawTeacherId === 'string'
+              ? rawTeacherId.trim()
+              : rawTeacherId && typeof rawTeacherId.toString === 'function'
+              ? rawTeacherId.toString().trim()
+              : null;
+          if (teacherId) {
+            filterSet.add(teacherId);
+          }
+        });
+      }
+
+      if (filterSet.size === 0) {
         return res.json({ teachers: [] });
       }
 
-      teacherFilterIds = Array.from(new Set(ids));
+      teacherFilterIds = Array.from(filterSet).map((value) => {
+        if (typeof value === 'string') return value.trim();
+        if (value && typeof value.toString === 'function') {
+          return value.toString().trim();
+        }
+        return '';
+      }).filter(Boolean);
     }
 
     let query = supabase
@@ -123,12 +171,13 @@ exports.listTeachers = async (req, res) => {
          school:schools(id,name),
          class:classes(id,name)`
       )
-      .ilike('role', 'teacher')
       .order('last_name', { ascending: true, nullsFirst: true })
       .order('first_name', { ascending: true, nullsFirst: true });
 
-    if (Array.isArray(teacherFilterIds)) {
+    if (Array.isArray(teacherFilterIds) && teacherFilterIds.length > 0) {
       query = query.in('id', teacherFilterIds);
+    } else {
+      query = query.ilike('role', 'teacher');
     }
 
     const { data, error } = await query;
@@ -140,19 +189,32 @@ exports.listTeachers = async (req, res) => {
 
     const teachers = (data || [])
       .map(cleanProfile)
-      .filter(Boolean)
-      .map((profile) => ({
-        id: profile.id,
-        email: profile.email,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        full_name: profile.full_name || profile.email || "Enseignant",
-        role: profile.role,
-        school: profile.school,
-        class: profile.class,
-      }));
+      .filter((profile) => profile && profile.id)
+      .map((profile) => {
+        const id =
+          typeof profile.id === 'string'
+            ? profile.id.trim()
+            : profile.id && typeof profile.id.toString === 'function'
+            ? profile.id.toString().trim()
+            : null;
+        if (!id) return null;
+        const subjects = teacherSubjects.get(id) || [];
+        return {
+          id,
+          email: profile.email,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          full_name: profile.full_name || profile.email || "Enseignant",
+          role: profile.role,
+          school: profile.school,
+          class: profile.class,
+          subject:
+            (Array.isArray(subjects) && subjects[0]) || null,
+          subjects,
+      };
+      });
 
-    return res.json({ teachers });
+    return res.json({ teachers: teachers.filter(Boolean) });
   } catch (err) {
     console.error("[usersController] listTeachers", err);
     return res.status(500).json({ error: "Internal server error" });
